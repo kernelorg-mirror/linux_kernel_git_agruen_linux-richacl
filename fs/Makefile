@@ -50,7 +50,7 @@ obj-$(CONFIG_SYSCTL)		+= drop_caches.o
 
 obj-$(CONFIG_FHANDLE)		+= fhandle.o
 obj-$(CONFIG_FS_IOMAP)		+= iomap.o
-obj-$(CONFIG_FS_RICHACL)	+= richacl.o richacl_xattr.o
+obj-$(CONFIG_FS_RICHACL)	+= richacl.o richacl_xattr.o richacl_compat.o
 
 obj-y				+= quota/
 
