@@ -750,3 +750,41 @@ richacl_apply_masks(struct richacl **acl)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(richacl_apply_masks);
+
+/**
+ * richacl_from_mode_unmasked  -  create an acl which corresponds to @mode
+ *
+ * The resulting acl doesn't have the RICHACL_MASKED flag set.
+ *
+ * @mode:	file mode including the file type
+ */
+struct richacl *
+richacl_from_mode_unmasked(mode_t mode)
+{
+	struct richacl *acl;
+	struct richace *ace;
+
+	acl = richacl_alloc(1, GFP_KERNEL);
+	if (!acl)
+		return NULL;
+	acl->a_flags = RICHACL_MASKED;
+	acl->a_owner_mask = richacl_mode_to_mask(mode >> 6) |
+			    RICHACE_POSIX_OWNER_ALLOWED;
+	acl->a_group_mask = richacl_mode_to_mask(mode >> 3);
+	acl->a_other_mask = richacl_mode_to_mask(mode);
+
+	ace = acl->a_entries;
+	ace->e_type  = RICHACE_ACCESS_ALLOWED_ACE_TYPE;
+	ace->e_flags = RICHACE_SPECIAL_WHO;
+	ace->e_mask = RICHACE_POSIX_ALWAYS_ALLOWED |
+		      RICHACE_POSIX_MODE_ALL |
+		      RICHACE_POSIX_OWNER_ALLOWED;
+	/* RICHACE_DELETE_CHILD is meaningless for non-directories. */
+	if (!S_ISDIR(mode))
+		ace->e_mask &= ~RICHACE_DELETE_CHILD;
+	ace->e_id.special = RICHACE_EVERYONE_SPECIAL_ID;
+
+	return acl;
+
+}
+EXPORT_SYMBOL_GPL(richacl_from_mode_unmasked);

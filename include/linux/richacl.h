@@ -327,5 +327,6 @@ extern struct richacl *richacl_create(struct inode *, struct inode *);
 
 /* richacl_compat.c */
 extern int richacl_apply_masks(struct richacl **);
+extern struct richacl *richacl_from_mode_unmasked(mode_t);
 
 #endif /* __RICHACL_H */
