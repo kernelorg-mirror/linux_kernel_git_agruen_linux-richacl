@@ -335,4 +335,7 @@ extern struct richacl *richacl_inherit(const struct richacl *, int);
 extern int richacl_permission(struct inode *, const struct richacl *, int);
 extern struct richacl *richacl_create(struct inode *, struct inode *);
 
+/* richacl_compat.c */
+extern int richacl_apply_masks(struct richacl **, kuid_t);
+
 #endif /* __RICHACL_H */
