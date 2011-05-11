@@ -205,4 +205,7 @@ extern int richacl_permission(struct inode *, const struct richacl *, int);
 extern int richacl_chmod(struct inode *, umode_t);
 extern struct richacl *richacl_create(umode_t *, struct inode *);
 
+/* richacl_compat.c */
+extern int richacl_apply_masks(struct richacl **, kuid_t);
+
 #endif /* __RICHACL_H */
