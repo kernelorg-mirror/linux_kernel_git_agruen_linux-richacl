@@ -48,7 +48,7 @@ obj-$(CONFIG_COREDUMP)		+= coredump.o
 obj-$(CONFIG_SYSCTL)		+= drop_caches.o
 
 obj-$(CONFIG_FHANDLE)		+= fhandle.o
-obj-$(CONFIG_FS_RICHACL)	+= richacl.o
+obj-$(CONFIG_FS_RICHACL)	+= richacl.o richacl_xattr.o
 
 obj-y				+= quota/
 
