@@ -218,6 +218,13 @@ richacl_inherit_inode(const struct richacl *dir_acl, struct inode *inode)
 			richacl_put(acl);
 			acl = NULL;
 		} else {
+			/*
+			 * We need to set RICHACL_PROTECTED because we are
+			 * doing an implicit chmod
+			 */
+			if (richacl_is_auto_inherit(acl))
+				acl->a_flags |= RICHACL_PROTECTED;
+
 			richacl_compute_max_masks(acl, inode->i_uid);
 			/*
 			 * Ensure that the acl will not grant any permissions
