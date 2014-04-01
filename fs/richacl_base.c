@@ -437,3 +437,51 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
 
 	return acl;
 }
+
+/**
+ * richacl_equiv_mode  -  check if @acl is equivalent to file permission bits
+ * @mode_p:	the file mode (including the file type)
+ *
+ * If @acl can be fully represented by file permission bits, this function
+ * returns 0, and the file permission bits in @mode_p are set to the equivalent
+ * of @acl.
+ *
+ * This function is used to avoid storing richacls on disk if the acl can be
+ * computed from the file permission bits.  It allows user-space to make sure
+ * that a file has no explicit richacl set.
+ */
+int
+richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
+{
+	const struct richace *ace = acl->a_entries;
+	unsigned int x;
+	mode_t mask;
+
+	if (acl->a_count != 1 ||
+	    acl->a_flags != RICHACL_MASKED ||
+	    !richace_is_everyone(ace) ||
+	    !richace_is_allow(ace) ||
+	    ace->e_flags & ~RICHACE_SPECIAL_WHO)
+		return -1;
+
+	/* Mask flags we can ignore */
+	x = ~RICHACE_POSIX_ALWAYS_ALLOWED;
+	if (!S_ISDIR(*mode_p))
+		x &= ~RICHACE_DELETE_CHILD;
+
+	mask = richacl_masks_to_mode(acl);
+	if (((acl->a_group_mask ^ richacl_mode_to_mask(mask >> 3)) & x) ||
+	    ((acl->a_other_mask ^ richacl_mode_to_mask(mask)) & x))
+		return -1;
+
+	x &= ~RICHACE_POSIX_OWNER_ALLOWED;
+	if ((acl->a_owner_mask ^ richacl_mode_to_mask(mask >> 6)) & x)
+		return -1;
+
+	if ((ace->e_mask ^ RICHACE_POSIX_MODE_ALL) & x)
+		return -1;
+
+	*mode_p = (*mode_p & ~S_IRWXUGO) | mask;
+	return 0;
+}
+EXPORT_SYMBOL_GPL(richacl_equiv_mode);
