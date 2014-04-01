@@ -175,5 +175,7 @@ richace_is_same_identifier(const struct richace *a, const struct richace *b)
 extern struct richacl *richacl_alloc(int, gfp_t);
 extern struct richacl *richacl_clone(const struct richacl *, gfp_t);
 extern void richace_copy(struct richace *, const struct richace *);
+extern int richacl_masks_to_mode(const struct richacl *);
+extern unsigned int richacl_mode_to_mask(umode_t);
 
 #endif /* __RICHACL_H */
