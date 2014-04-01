@@ -41,6 +41,9 @@ struct richacl {
 };
 
 #define RICHACL_VALID_FLAGS (					\
+	RICHACL_AUTO_INHERIT |					\
+	RICHACL_PROTECTED |					\
+	RICHACL_DEFAULTED |					\
 	RICHACL_WRITE_THROUGH |					\
 	RICHACL_MASKED)
 
@@ -50,13 +53,15 @@ struct richacl {
 	RICHACE_NO_PROPAGATE_INHERIT_ACE |			\
 	RICHACE_INHERIT_ONLY_ACE |				\
 	RICHACE_IDENTIFIER_GROUP |				\
+	RICHACE_INHERITED_ACE |					\
 	RICHACE_SPECIAL_WHO)
 
 #define RICHACE_INHERITANCE_FLAGS (				\
 	RICHACE_FILE_INHERIT_ACE |				\
 	RICHACE_DIRECTORY_INHERIT_ACE |				\
 	RICHACE_NO_PROPAGATE_INHERIT_ACE |			\
-	RICHACE_INHERIT_ONLY_ACE )
+	RICHACE_INHERIT_ONLY_ACE |				\
+	RICHACE_INHERITED_ACE)
 
 /* Valid RICHACE_* flags for directories and non-directories */
 #define RICHACE_VALID_MASK (					\
@@ -112,6 +117,18 @@ extern struct richacl *get_cached_richacl_rcu(struct inode *);
 extern void set_cached_richacl(struct inode *, struct richacl *);
 extern void forget_cached_richacl(struct inode *);
 extern struct richacl *get_richacl(struct inode *);
+
+static inline int
+richacl_is_auto_inherit(const struct richacl *acl)
+{
+	return acl->a_flags & RICHACL_AUTO_INHERIT;
+}
+
+static inline int
+richacl_is_protected(const struct richacl *acl)
+{
+	return acl->a_flags & RICHACL_PROTECTED;
+}
 
 /**
  * richace_is_owner  -  check if @ace is an OWNER@ entry
