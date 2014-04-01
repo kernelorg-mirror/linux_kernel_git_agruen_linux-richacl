@@ -193,3 +193,65 @@ out:
 	return denied ? -EACCES : 0;
 }
 EXPORT_SYMBOL_GPL(richacl_permission);
+
+/**
+ * richacl_inherit_inode  -  compute inherited acl and file mode
+ * @dir_acl:	acl of the containing directory
+ * @inode:	inode of the new file (create mode in i_mode)
+ *
+ * The file permission bits in inode->i_mode must be set to the create mode by
+ * the caller.
+ *
+ * If there is an inheritable acl, the maximum permissions that the acl grants
+ * will be computed and permissions not granted by the acl will be removed from
+ * inode->i_mode.  If there is no inheritable acl, the umask will be applied
+ * instead.
+ */
+static struct richacl *
+richacl_inherit_inode(const struct richacl *dir_acl, struct inode *inode)
+{
+	struct richacl *acl;
+	mode_t mask;
+
+	acl = richacl_inherit(dir_acl, S_ISDIR(inode->i_mode));
+	if (acl) {
+		mask = inode->i_mode;
+		if (richacl_equiv_mode(acl, &mask) == 0) {
+			richacl_put(acl);
+			acl = NULL;
+		} else {
+			richacl_compute_max_masks(acl, inode->i_uid);
+			/*
+			 * Ensure that the acl will not grant any permissions
+			 * beyond the create mode.
+			 */
+			acl->a_flags |= RICHACL_MASKED;
+			acl->a_owner_mask &= richacl_mode_to_mask(inode->i_mode >> 6);
+			acl->a_group_mask &= richacl_mode_to_mask(inode->i_mode >> 3);
+			acl->a_other_mask &= richacl_mode_to_mask(inode->i_mode);
+			mask = ~S_IRWXUGO | richacl_masks_to_mode(acl);
+		}
+	} else
+		mask = ~current_umask();
+
+	inode->i_mode &= mask;
+	return acl;
+}
+
+struct richacl *richacl_create(struct inode *inode, struct inode *dir)
+{
+	struct richacl *dir_acl, *acl = NULL;
+
+	if (S_ISLNK(inode->i_mode))
+		return NULL;
+	dir_acl = get_richacl(dir);
+	if (dir_acl) {
+		if (IS_ERR(dir_acl))
+			return dir_acl;
+		acl = richacl_inherit_inode(dir_acl, inode);
+		richacl_put(dir_acl);
+	} else
+		inode->i_mode &= ~current_umask();
+	return acl;
+}
+EXPORT_SYMBOL_GPL(richacl_create);
