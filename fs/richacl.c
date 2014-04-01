@@ -293,8 +293,8 @@ richacl_permission(struct inode *inode, const struct richacl *acl,
 	} else {
 		/*
 		 * When the acl is not masked, there is no need to determine if
-		 * the process is in the group class and we can break out
-		 * earlier of the loop below.
+		 * the process is in the group class and we can earlier break
+		 * out of the loop below.
 		 */
 		in_owner_or_group_class = 1;
 	}
