@@ -37,10 +37,10 @@
 #include <linux/printk.h>
 #include <linux/slab.h>
 #include <linux/bitops.h>
+#include <linux/acl.h>
 
 #include "ext4_jbd2.h"
 #include "xattr.h"
-#include "acl.h"
 #include "truncate.h"
 
 #include <trace/events/ext4.h>
@@ -5025,8 +5025,7 @@ int ext4_setattr(struct dentry *dentry, struct iattr *attr)
 		ext4_orphan_del(NULL, inode);
 
 	if (!rc && (ia_valid & ATTR_MODE))
-		rc = posix_acl_chmod(inode, inode->i_mode);
-
+		rc = acl_chmod(inode);
 err_out:
 	ext4_std_error(inode->i_sb, error);
 	if (!error)
