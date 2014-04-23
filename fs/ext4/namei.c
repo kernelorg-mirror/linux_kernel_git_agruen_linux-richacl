@@ -38,6 +38,7 @@
 
 #include "xattr.h"
 #include "acl.h"
+#include "richacl.h"
 
 #include <trace/events/ext4.h>
 /*
@@ -3852,8 +3853,10 @@ const struct inode_operations ext4_dir_inode_operations = {
 	.getxattr	= generic_getxattr,
 	.listxattr	= ext4_listxattr,
 	.removexattr	= generic_removexattr,
-	.get_acl	= ext4_get_acl,
-	.set_acl	= ext4_set_acl,
+	.get_acl	= ext4_get_posix_acl,
+	.set_acl	= ext4_set_posix_acl,
+	.get_richacl	= ext4_get_richacl,
+	.set_richacl	= ext4_set_richacl,
 	.fiemap         = ext4_fiemap,
 };
 
@@ -3863,6 +3866,8 @@ const struct inode_operations ext4_special_inode_operations = {
 	.getxattr	= generic_getxattr,
 	.listxattr	= ext4_listxattr,
 	.removexattr	= generic_removexattr,
-	.get_acl	= ext4_get_acl,
-	.set_acl	= ext4_set_acl,
+	.get_acl	= ext4_get_posix_acl,
+	.set_acl	= ext4_set_posix_acl,
+	.get_richacl	= ext4_get_richacl,
+	.set_richacl	= ext4_set_richacl,
 };
