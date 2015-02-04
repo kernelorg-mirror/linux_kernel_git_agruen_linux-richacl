@@ -457,6 +457,9 @@ otherwise noted.
 	If a situation is encountered that rcu-walk cannot handle, return
 	-ECHILD and it will be called again in ref-walk mode.
 
+  get_acl: called by the VFS to get the posix acl of an inode. Called during
+	permission checks. The returned acl is cached in the inode.
+
   setattr: called by the VFS to set attributes for a file. This method
   	is called by chmod(2) and related system calls.
 
