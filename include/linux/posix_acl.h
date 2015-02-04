@@ -43,10 +43,7 @@ struct posix_acl_entry {
 };
 
 struct posix_acl {
-	union {
-		atomic_t		a_refcount;
-		struct rcu_head		a_rcu;
-	};
+	atomic_t		a_refcount;
 	unsigned int		a_count;
 	struct posix_acl_entry	a_entries[0];
 };
@@ -73,7 +70,7 @@ static inline void
 posix_acl_release(struct posix_acl *acl)
 {
 	if (acl && atomic_dec_and_test(&acl->a_refcount))
-		kfree_rcu(acl, a_rcu);
+		__kfree_rcu((struct rcu_head *)acl, 0);
 }
 
 
