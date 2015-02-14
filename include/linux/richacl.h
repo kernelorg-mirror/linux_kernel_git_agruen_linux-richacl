@@ -168,7 +168,7 @@ static inline struct richacl *
 richacl_get(struct richacl *acl)
 {
 	if (acl)
-		atomic_inc(&acl->a_refcount);
+		atomic_inc(&acl->a_base.ba_refcount);
 	return acl;
 }
 
