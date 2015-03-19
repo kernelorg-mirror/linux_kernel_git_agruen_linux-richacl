@@ -110,7 +110,7 @@ check_attr_support(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	 * in current environment or not.
 	 */
 	if (bmval[0] & FATTR4_WORD0_ACL) {
-		if (!IS_POSIXACL(d_inode(dentry)))
+		if (!IS_ACL(d_inode(dentry)))
 			return nfserr_attrnotsupp;
 	}
 
