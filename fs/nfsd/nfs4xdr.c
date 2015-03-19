@@ -339,11 +339,24 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
 
 		richacl_for_each_entry(ace, *acl) {
 			READ_BUF(16); len += 16;
-			ace->e_type = be32_to_cpup(p++);
-			ace->e_flags = be32_to_cpup(p++);
-			ace->e_mask = be32_to_cpup(p++);
-			if (ace->e_flags & RICHACE_SPECIAL_WHO)
+
+			dummy32 = be32_to_cpup(p++);
+			if (dummy32 > RICHACE_ACCESS_DENIED_ACE_TYPE)
 				return nfserr_inval;
+			ace->e_type = dummy32;
+
+			dummy32 = be32_to_cpup(p++);
+			if (dummy32 & (~RICHACE_VALID_FLAGS |
+				       RICHACE_INHERITED_ACE |
+				       RICHACE_SPECIAL_WHO))
+				return nfserr_inval;
+			ace->e_flags = dummy32;
+
+			dummy32 = be32_to_cpup(p++);
+			if (dummy32 & ~RICHACE_VALID_MASK)
+				return nfserr_inval;
+			ace->e_mask = dummy32;
+
 			dummy32 = be32_to_cpup(p++);
 			READ_BUF(dummy32);
 			len += XDR_QUADLEN(dummy32) << 2;

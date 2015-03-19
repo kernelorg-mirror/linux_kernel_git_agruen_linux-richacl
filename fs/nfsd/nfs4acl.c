@@ -38,6 +38,8 @@
 #include <linux/nfs_fs.h>
 #include <linux/richacl_compat.h>
 #include <linux/nfs4acl.h>
+#include <linux/xattr.h>
+#include <linux/richacl_xattr.h>
 #include "nfsfh.h"
 #include "nfsd.h"
 #include "idmap.h"
@@ -127,8 +129,8 @@ static short ace2type(struct richace *);
 static void _posix_to_richacl_one(struct posix_acl *, struct richacl_alloc *,
 				unsigned int);
 
-int
-nfsd4_get_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl **acl)
+static int
+nfsd4_get_posix_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl **acl)
 {
 	struct inode *inode = dentry->d_inode;
 	int error = 0;
@@ -144,7 +146,8 @@ nfsd4_get_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl **ac
 	if (IS_ERR(pacl))
 		return PTR_ERR(pacl);
 
-	/* allocate for worst case: one (deny, allow) pair each: */
+	/* Allocate for worst case: one (deny, allow) pair each.  The resulting
+	   acl will be released shortly and won't be cached. */
 	count = 2 * pacl->a_count;
 
 	if (S_ISDIR(inode->i_mode)) {
@@ -176,6 +179,38 @@ out:
 rel_pacl:
 	posix_acl_release(pacl);
 	return error;
+}
+
+static int
+nfsd4_get_richacl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl **acl)
+{
+	struct inode *inode = dentry->d_inode;
+	struct richacl *acl2;
+	int error;
+
+	acl2 = get_richacl(inode);
+	if (!acl2)
+		acl2 = richacl_from_mode(inode->i_mode);
+
+	if (IS_ERR(acl2))
+		return PTR_ERR(acl2);
+	error = richacl_apply_masks(&acl2);
+	if (error)
+		richacl_put(acl2);
+	else
+		*acl = acl2;
+	return error;
+}
+
+int
+nfsd4_get_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl **acl)
+{
+	struct inode *inode = dentry->d_inode;
+
+	if (IS_RICHACL(inode))
+		return nfsd4_get_richacl(rqstp, dentry, acl);
+	else
+		return nfsd4_get_posix_acl(rqstp, dentry, acl);
 }
 
 struct posix_acl_summary {
@@ -788,23 +823,13 @@ out_estate:
 	return ret;
 }
 
-__be32
-nfsd4_set_acl(struct svc_rqst *rqstp, struct svc_fh *fhp, struct richacl *acl)
+static __be32
+nfsd4_set_posix_acl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl *acl)
 {
-	__be32 error;
 	int host_error;
-	struct dentry *dentry;
-	struct inode *inode;
+	struct inode *inode = dentry->d_inode;
 	struct posix_acl *pacl = NULL, *dpacl = NULL;
 	unsigned int flags = 0;
-
-	/* Get inode */
-	error = fh_verify(rqstp, fhp, 0, NFSD_MAY_SATTR);
-	if (error)
-		return error;
-
-	dentry = fhp->fh_dentry;
-	inode = dentry->d_inode;
 
 	if (!inode->i_op->set_acl || !IS_POSIXACL(inode))
 		return nfserr_attrnotsupp;
@@ -837,6 +862,38 @@ out_nfserr:
 		return nfserrno(host_error);
 }
 
+static __be32
+nfsd4_set_richacl(struct svc_rqst *rqstp, struct dentry *dentry, struct richacl *acl)
+{
+	size_t size = richacl_xattr_size(acl);
+	char *buffer;
+	int error;
+
+	buffer = kmalloc(size, GFP_KERNEL);
+	if (!buffer)
+		return -ENOMEM;
+	richacl_to_xattr(&init_user_ns, acl, buffer, size);
+	error = vfs_setxattr(dentry, RICHACL_XATTR, buffer, size, 0);
+	kfree(buffer);
+	return error;
+}
+
+__be32
+nfsd4_set_acl(struct svc_rqst *rqstp, struct svc_fh *fhp, struct richacl *acl)
+{
+	struct dentry *dentry;
+	__be32 error;
+
+	error = fh_verify(rqstp, fhp, 0, NFSD_MAY_SATTR);
+	if (error)
+		return error;
+	dentry = fhp->fh_dentry;
+
+	if (IS_RICHACL(dentry->d_inode))
+		return nfsd4_set_richacl(rqstp, dentry, acl);
+	else
+		return nfsd4_set_posix_acl(rqstp, dentry, acl);
+}
 
 static short
 ace2type(struct richace *ace)
