@@ -1918,7 +1918,7 @@ struct inode *nfs_alloc_inode(struct super_block *sb)
 	nfsi->flags = 0UL;
 	nfsi->cache_validity = 0UL;
 #if IS_ENABLED(CONFIG_NFS_V4)
-	nfsi->nfs4_acl = NULL;
+	nfsi->richacl = ACL_NOT_CACHED;
 #endif /* CONFIG_NFS_V4 */
 	return &nfsi->vfs_inode;
 }
