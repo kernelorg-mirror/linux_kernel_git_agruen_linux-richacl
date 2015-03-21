@@ -176,7 +176,7 @@ struct nfs_inode {
 	wait_queue_head_t	waitqueue;
 
 #if IS_ENABLED(CONFIG_NFS_V4)
-	struct nfs4_cached_acl	*nfs4_acl;
+	uint32_t		cached_acl_len;
         /* NFSv4 state */
 	struct list_head	open_states;
 	struct nfs_delegation __rcu *delegation;
