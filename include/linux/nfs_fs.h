@@ -168,7 +168,7 @@ struct nfs_inode {
 	struct rw_semaphore	rmdir_sem;
 
 #if IS_ENABLED(CONFIG_NFS_V4)
-	struct nfs4_cached_acl	*nfs4_acl;
+	struct richacl		*richacl;
         /* NFSv4 state */
 	struct list_head	open_states;
 	struct nfs_delegation __rcu *delegation;
