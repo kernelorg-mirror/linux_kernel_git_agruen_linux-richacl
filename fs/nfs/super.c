@@ -2312,6 +2312,21 @@ inline void nfs_initialise_sb(struct super_block *sb)
 {
 	struct nfs_server *server = NFS_SB(sb);
 
+	/*
+	 * The MS_POSIXACL and MS_RICHACL flags indicate that the VFS should
+	 * not apply the umask to the create mode before calling iop->create,
+	 * iop->mkdir, and iop->mknod.
+	 */
+	switch(server->nfs_client->rpc_ops->version) {
+	case 3:
+		sb->s_flags |= MS_POSIXACL;
+		break;
+
+	case 4:
+		sb->s_flags |= MS_RICHACL;
+		break;
+	}
+
 	sb->s_magic = NFS_SUPER_MAGIC;
 
 	/* We probably want something more informative here */
@@ -2342,13 +2357,8 @@ void nfs_fill_super(struct super_block *sb, struct nfs_mount_info *mount_info)
 	if (data && data->bsize)
 		sb->s_blocksize = nfs_block_size(data->bsize, &sb->s_blocksize_bits);
 
-	if (server->nfs_client->rpc_ops->version != 2) {
-		/* The VFS shouldn't apply the umask to mode bits. We will do
-		 * so ourselves when necessary.
-		 */
-		sb->s_flags |= MS_POSIXACL;
+	if (server->nfs_client->rpc_ops->version != 2)
 		sb->s_time_gran = 1;
-	}
 
  	nfs_initialise_sb(sb);
 }
@@ -2360,7 +2370,6 @@ EXPORT_SYMBOL_GPL(nfs_fill_super);
 void nfs_clone_super(struct super_block *sb, struct nfs_mount_info *mount_info)
 {
 	const struct super_block *old_sb = mount_info->cloned->sb;
-	struct nfs_server *server = NFS_SB(sb);
 
 	sb->s_blocksize_bits = old_sb->s_blocksize_bits;
 	sb->s_blocksize = old_sb->s_blocksize;
@@ -2368,13 +2377,6 @@ void nfs_clone_super(struct super_block *sb, struct nfs_mount_info *mount_info)
 	sb->s_xattr = old_sb->s_xattr;
 	sb->s_op = old_sb->s_op;
 	sb->s_time_gran = 1;
-
-	if (server->nfs_client->rpc_ops->version != 2) {
-		/* The VFS shouldn't apply the umask to mode bits. We will do
-		 * so ourselves when necessary.
-		 */
-		sb->s_flags |= MS_POSIXACL;
-	}
 
  	nfs_initialise_sb(sb);
 }
