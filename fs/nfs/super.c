@@ -2316,7 +2316,7 @@ void nfs_fill_super(struct super_block *sb, struct nfs_mount_info *mount_info)
 		/* The VFS shouldn't apply the umask to mode bits. We will do
 		 * so ourselves when necessary.
 		 */
-		sb->s_flags |= MS_POSIXACL;
+		sb->s_flags |= MS_RICHACL;
 		sb->s_time_gran = 1;
 	}
 
@@ -2343,7 +2343,7 @@ void nfs_clone_super(struct super_block *sb, struct nfs_mount_info *mount_info)
 		/* The VFS shouldn't apply the umask to mode bits. We will do
 		 * so ourselves when necessary.
 		 */
-		sb->s_flags |= MS_POSIXACL;
+		sb->s_flags |= MS_RICHACL;
 	}
 
  	nfs_initialise_sb(sb);
