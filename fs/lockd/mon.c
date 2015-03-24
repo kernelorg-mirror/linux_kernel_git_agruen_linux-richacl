@@ -527,22 +527,25 @@ static void encode_priv(struct xdr_stream *xdr, const struct nsm_args *argp)
 }
 
 static void nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
-			    const struct nsm_args *argp)
+			    void *obj)
 {
+	const struct nsm_args *argp = obj;
 	encode_mon_id(xdr, argp);
 	encode_priv(xdr, argp);
 }
 
 static void nsm_xdr_enc_unmon(struct rpc_rqst *req, struct xdr_stream *xdr,
-			      const struct nsm_args *argp)
+			      void *obj)
 {
+	const struct nsm_args *argp = obj;
 	encode_mon_id(xdr, argp);
 }
 
 static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,
 				struct xdr_stream *xdr,
-				struct nsm_res *resp)
+				void *obj)
 {
+	struct nsm_res *resp = obj;
 	__be32 *p;
 
 	p = xdr_inline_decode(xdr, 4 + 4);
@@ -558,8 +561,9 @@ static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,
 
 static int nsm_xdr_dec_stat(struct rpc_rqst *rqstp,
 			    struct xdr_stream *xdr,
-			    struct nsm_res *resp)
+			    void *obj)
 {
+	struct nsm_res *resp = obj;
 	__be32 *p;
 
 	p = xdr_inline_decode(xdr, 4);
@@ -583,8 +587,8 @@ static int nsm_xdr_dec_stat(struct rpc_rqst *rqstp,
 static struct rpc_procinfo	nsm_procedures[] = {
 [NSMPROC_MON] = {
 		.p_proc		= NSMPROC_MON,
-		.p_encode	= (kxdreproc_t)nsm_xdr_enc_mon,
-		.p_decode	= (kxdrdproc_t)nsm_xdr_dec_stat_res,
+		.p_encode	= nsm_xdr_enc_mon,
+		.p_decode	= nsm_xdr_dec_stat_res,
 		.p_arglen	= SM_mon_sz,
 		.p_replen	= SM_monres_sz,
 		.p_statidx	= NSMPROC_MON,
@@ -592,8 +596,8 @@ static struct rpc_procinfo	nsm_procedures[] = {
 	},
 [NSMPROC_UNMON] = {
 		.p_proc		= NSMPROC_UNMON,
-		.p_encode	= (kxdreproc_t)nsm_xdr_enc_unmon,
-		.p_decode	= (kxdrdproc_t)nsm_xdr_dec_stat,
+		.p_encode	= nsm_xdr_enc_unmon,
+		.p_decode	= nsm_xdr_dec_stat,
 		.p_arglen	= SM_mon_id_sz,
 		.p_replen	= SM_unmonres_sz,
 		.p_statidx	= NSMPROC_UNMON,
