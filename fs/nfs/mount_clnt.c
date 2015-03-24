@@ -305,11 +305,12 @@ static void encode_mntdirpath(struct xdr_stream *xdr, const char *pathname)
 	xdr_encode_opaque(p, pathname, pathname_len);
 }
 
-static void mnt_xdr_enc_dirpath(struct rpc_rqst *req, struct xdr_stream *xdr,
+static int mnt_xdr_enc_dirpath(struct rpc_rqst *req, struct xdr_stream *xdr,
 				void *obj)
 {
 	const char *dirpath = obj;
 	encode_mntdirpath(xdr, dirpath);
+	return 0;
 }
 
 /*

@@ -844,8 +844,8 @@ static void rpcb_getport_done(struct rpc_task *child, void *data)
  * XDR functions for rpcbind
  */
 
-static void rpcb_enc_mapping(struct rpc_rqst *req, struct xdr_stream *xdr,
-			     void *obj)
+static int rpcb_enc_mapping(struct rpc_rqst *req, struct xdr_stream *xdr,
+			    void *obj)
 {
 	const struct rpcbind_args *rpcb = obj;
 	__be32 *p;
@@ -860,6 +860,7 @@ static void rpcb_enc_mapping(struct rpc_rqst *req, struct xdr_stream *xdr,
 	*p++ = cpu_to_be32(rpcb->r_vers);
 	*p++ = cpu_to_be32(rpcb->r_prot);
 	*p   = cpu_to_be32(rpcb->r_port);
+	return 0;
 }
 
 static int rpcb_dec_getport(struct rpc_rqst *req, struct xdr_stream *xdr,
@@ -921,8 +922,8 @@ static void encode_rpcb_string(struct xdr_stream *xdr, const char *string,
 	xdr_encode_opaque(p, string, len);
 }
 
-static void rpcb_enc_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
-			     void *obj)
+static int rpcb_enc_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
+			    void *obj)
 {
 	const struct rpcbind_args *rpcb = obj;
 	__be32 *p;
@@ -940,6 +941,7 @@ static void rpcb_enc_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
 	encode_rpcb_string(xdr, rpcb->r_netid, RPCBIND_MAXNETIDLEN);
 	encode_rpcb_string(xdr, rpcb->r_addr, RPCBIND_MAXUADDRLEN);
 	encode_rpcb_string(xdr, rpcb->r_owner, RPCB_MAXOWNERLEN);
+	return 0;
 }
 
 static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,

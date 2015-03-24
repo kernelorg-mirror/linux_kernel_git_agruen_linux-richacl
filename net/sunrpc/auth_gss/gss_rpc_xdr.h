@@ -177,9 +177,9 @@ struct gssx_res_accept_sec_context {
 #define gssx_dec_store_cred NULL
 #define gssx_enc_init_sec_context NULL
 #define gssx_dec_init_sec_context NULL
-void gssx_enc_accept_sec_context(struct rpc_rqst *req,
-				 struct xdr_stream *xdr,
-				 void *);
+int gssx_enc_accept_sec_context(struct rpc_rqst *req,
+				struct xdr_stream *xdr,
+				void *);
 int gssx_dec_accept_sec_context(struct rpc_rqst *rqstp,
 				struct xdr_stream *xdr,
 				void *);

@@ -844,12 +844,13 @@ static void encode_diropargs3(struct xdr_stream *xdr, const struct nfs_fh *fh,
  *		nfs_fh3  object;
  *	};
  */
-static void nfs3_xdr_enc_getattr3args(struct rpc_rqst *req,
-				      struct xdr_stream *xdr,
-				      void *obj)
+static int nfs3_xdr_enc_getattr3args(struct rpc_rqst *req,
+				     struct xdr_stream *xdr,
+				     void *obj)
 {
 	const struct nfs_fh *fh = obj;
 	encode_nfs_fh3(xdr, fh);
+	return 0;
 }
 
 /*
@@ -883,14 +884,15 @@ static void encode_sattrguard3(struct xdr_stream *xdr,
 	}
 }
 
-static void nfs3_xdr_enc_setattr3args(struct rpc_rqst *req,
-				      struct xdr_stream *xdr,
-				      void *obj)
+static int nfs3_xdr_enc_setattr3args(struct rpc_rqst *req,
+				     struct xdr_stream *xdr,
+				     void *obj)
 {
 	const struct nfs3_sattrargs *args = obj;
 	encode_nfs_fh3(xdr, args->fh);
 	encode_sattr3(xdr, args->sattr);
 	encode_sattrguard3(xdr, args);
+	return 0;
 }
 
 /*
@@ -900,12 +902,13 @@ static void nfs3_xdr_enc_setattr3args(struct rpc_rqst *req,
  *		diropargs3  what;
  *	};
  */
-static void nfs3_xdr_enc_lookup3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_lookup3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs3_diropargs *args = obj;
 	encode_diropargs3(xdr, args->fh, args->name, args->len);
+	return 0;
 }
 
 /*
@@ -923,12 +926,13 @@ static void encode_access3args(struct xdr_stream *xdr,
 	encode_uint32(xdr, args->access);
 }
 
-static void nfs3_xdr_enc_access3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_access3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs3_accessargs *args = obj;
 	encode_access3args(xdr, args);
+	return 0;
 }
 
 /*
@@ -938,14 +942,15 @@ static void nfs3_xdr_enc_access3args(struct rpc_rqst *req,
  *		nfs_fh3	symlink;
  *	};
  */
-static void nfs3_xdr_enc_readlink3args(struct rpc_rqst *req,
-				       struct xdr_stream *xdr,
-				       void *obj)
+static int nfs3_xdr_enc_readlink3args(struct rpc_rqst *req,
+				      struct xdr_stream *xdr,
+				      void *obj)
 {
 	const struct nfs3_readlinkargs *args = obj;
 	encode_nfs_fh3(xdr, args->fh);
 	prepare_reply_buffer(req, args->pages, args->pgbase,
 					args->pglen, NFS3_readlinkres_sz);
+	return 0;
 }
 
 /*
@@ -969,15 +974,16 @@ static void encode_read3args(struct xdr_stream *xdr,
 	*p = cpu_to_be32(args->count);
 }
 
-static void nfs3_xdr_enc_read3args(struct rpc_rqst *req,
-				   struct xdr_stream *xdr,
-				   void *obj)
+static int nfs3_xdr_enc_read3args(struct rpc_rqst *req,
+				  struct xdr_stream *xdr,
+				  void *obj)
 {
 	const struct nfs_pgio_args *args = obj;
 	encode_read3args(xdr, args);
 	prepare_reply_buffer(req, args->pages, args->pgbase,
 					args->count, NFS3_readres_sz);
 	req->rq_rcv_buf.flags |= XDRBUF_READ;
+	return 0;
 }
 
 /*
@@ -1012,13 +1018,14 @@ static void encode_write3args(struct xdr_stream *xdr,
 	xdr_write_pages(xdr, args->pages, args->pgbase, args->count);
 }
 
-static void nfs3_xdr_enc_write3args(struct rpc_rqst *req,
-				    struct xdr_stream *xdr,
-				    void *obj)
+static int nfs3_xdr_enc_write3args(struct rpc_rqst *req,
+				   struct xdr_stream *xdr,
+				   void *obj)
 {
 	const struct nfs_pgio_args *args = obj;
 	encode_write3args(xdr, args);
 	xdr->buf->flags |= XDRBUF_WRITE;
+	return 0;
 }
 
 /*
@@ -1060,13 +1067,14 @@ static void encode_createhow3(struct xdr_stream *xdr,
 	}
 }
 
-static void nfs3_xdr_enc_create3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_create3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs3_createargs *args = obj;
 	encode_diropargs3(xdr, args->fh, args->name, args->len);
 	encode_createhow3(xdr, args);
+	return 0;
 }
 
 /*
@@ -1077,13 +1085,14 @@ static void nfs3_xdr_enc_create3args(struct rpc_rqst *req,
  *		sattr3		attributes;
  *	};
  */
-static void nfs3_xdr_enc_mkdir3args(struct rpc_rqst *req,
-				    struct xdr_stream *xdr,
-				    void *obj)
+static int nfs3_xdr_enc_mkdir3args(struct rpc_rqst *req,
+				   struct xdr_stream *xdr,
+				   void *obj)
 {
 	const struct nfs3_mkdirargs *args = obj;
 	encode_diropargs3(xdr, args->fh, args->name, args->len);
 	encode_sattr3(xdr, args->sattr);
+	return 0;
 }
 
 /*
@@ -1106,13 +1115,14 @@ static void encode_symlinkdata3(struct xdr_stream *xdr,
 	encode_nfspath3(xdr, args->pages, args->pathlen);
 }
 
-static void nfs3_xdr_enc_symlink3args(struct rpc_rqst *req,
-				      struct xdr_stream *xdr,
-				      void *obj)
+static int nfs3_xdr_enc_symlink3args(struct rpc_rqst *req,
+				     struct xdr_stream *xdr,
+				     void *obj)
 {
 	const struct nfs3_symlinkargs *args = obj;
 	encode_diropargs3(xdr, args->fromfh, args->fromname, args->fromlen);
 	encode_symlinkdata3(xdr, args);
+	return 0;
 }
 
 /*
@@ -1167,13 +1177,14 @@ static void encode_mknoddata3(struct xdr_stream *xdr,
 	}
 }
 
-static void nfs3_xdr_enc_mknod3args(struct rpc_rqst *req,
-				    struct xdr_stream *xdr,
-				    void *obj)
+static int nfs3_xdr_enc_mknod3args(struct rpc_rqst *req,
+				   struct xdr_stream *xdr,
+				   void *obj)
 {
 	const struct nfs3_mknodargs *args = obj;
 	encode_diropargs3(xdr, args->fh, args->name, args->len);
 	encode_mknoddata3(xdr, args);
+	return 0;
 }
 
 /*
@@ -1183,12 +1194,13 @@ static void nfs3_xdr_enc_mknod3args(struct rpc_rqst *req,
  *		diropargs3  object;
  *	};
  */
-static void nfs3_xdr_enc_remove3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_remove3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs_removeargs *args = obj;
 	encode_diropargs3(xdr, args->fh, args->name.name, args->name.len);
+	return 0;
 }
 
 /*
@@ -1199,9 +1211,9 @@ static void nfs3_xdr_enc_remove3args(struct rpc_rqst *req,
  *		diropargs3	to;
  *	};
  */
-static void nfs3_xdr_enc_rename3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_rename3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs_renameargs *args = obj;
 	const struct qstr *old = args->old_name;
@@ -1209,6 +1221,7 @@ static void nfs3_xdr_enc_rename3args(struct rpc_rqst *req,
 
 	encode_diropargs3(xdr, args->old_dir, old->name, old->len);
 	encode_diropargs3(xdr, args->new_dir, new->name, new->len);
+	return 0;
 }
 
 /*
@@ -1219,13 +1232,14 @@ static void nfs3_xdr_enc_rename3args(struct rpc_rqst *req,
  *		diropargs3	link;
  *	};
  */
-static void nfs3_xdr_enc_link3args(struct rpc_rqst *req,
-				   struct xdr_stream *xdr,
-				   void *obj)
+static int nfs3_xdr_enc_link3args(struct rpc_rqst *req,
+				  struct xdr_stream *xdr,
+				  void *obj)
 {
 	const struct nfs3_linkargs *args = obj;
 	encode_nfs_fh3(xdr, args->fromfh);
 	encode_diropargs3(xdr, args->tofh, args->toname, args->tolen);
+	return 0;
 }
 
 /*
@@ -1251,14 +1265,15 @@ static void encode_readdir3args(struct xdr_stream *xdr,
 	*p = cpu_to_be32(args->count);
 }
 
-static void nfs3_xdr_enc_readdir3args(struct rpc_rqst *req,
-				      struct xdr_stream *xdr,
-				      void *obj)
+static int nfs3_xdr_enc_readdir3args(struct rpc_rqst *req,
+				     struct xdr_stream *xdr,
+				     void *obj)
 {
 	const struct nfs3_readdirargs *args = obj;
 	encode_readdir3args(xdr, args);
 	prepare_reply_buffer(req, args->pages, 0,
 				args->count, NFS3_readdirres_sz);
+	return 0;
 }
 
 /*
@@ -1292,14 +1307,15 @@ static void encode_readdirplus3args(struct xdr_stream *xdr,
 	*p = cpu_to_be32(args->count);
 }
 
-static void nfs3_xdr_enc_readdirplus3args(struct rpc_rqst *req,
-					  struct xdr_stream *xdr,
-					  void *obj)
+static int nfs3_xdr_enc_readdirplus3args(struct rpc_rqst *req,
+					 struct xdr_stream *xdr,
+					 void *obj)
 {
 	const struct nfs3_readdirargs *args = obj;
 	encode_readdirplus3args(xdr, args);
 	prepare_reply_buffer(req, args->pages, 0,
 				args->count, NFS3_readdirres_sz);
+	return 0;
 }
 
 /*
@@ -1323,19 +1339,20 @@ static void encode_commit3args(struct xdr_stream *xdr,
 	*p = cpu_to_be32(args->count);
 }
 
-static void nfs3_xdr_enc_commit3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_commit3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs_commitargs *args = obj;
 	encode_commit3args(xdr, args);
+	return 0;
 }
 
 #ifdef CONFIG_NFS_V3_ACL
 
-static void nfs3_xdr_enc_getacl3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_getacl3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs3_getaclargs *args = obj;
 	encode_nfs_fh3(xdr, args->fh);
@@ -1344,11 +1361,12 @@ static void nfs3_xdr_enc_getacl3args(struct rpc_rqst *req,
 		prepare_reply_buffer(req, args->pages, 0,
 					NFSACL_MAXPAGES << PAGE_SHIFT,
 					ACL3_getaclres_sz);
+	return 0;
 }
 
-static void nfs3_xdr_enc_setacl3args(struct rpc_rqst *req,
-				     struct xdr_stream *xdr,
-				     void *obj)
+static int nfs3_xdr_enc_setacl3args(struct rpc_rqst *req,
+				    struct xdr_stream *xdr,
+				    void *obj)
 {
 	const struct nfs3_setaclargs *args = obj;
 	unsigned int base;
@@ -1373,6 +1391,7 @@ static void nfs3_xdr_enc_setacl3args(struct rpc_rqst *req,
 			    args->acl_default : NULL, 1,
 			    NFS_ACL_DEFAULT);
 	BUG_ON(error < 0);
+	return 0;
 }
 
 #endif  /* CONFIG_NFS_V3_ACL */
