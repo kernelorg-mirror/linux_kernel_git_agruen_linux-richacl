@@ -731,9 +731,9 @@ static int gssx_enc_cb(struct xdr_stream *xdr, struct gssx_cb *cb)
 	return err;
 }
 
-void gssx_enc_accept_sec_context(struct rpc_rqst *req,
-				 struct xdr_stream *xdr,
-				 void *obj)
+int gssx_enc_accept_sec_context(struct rpc_rqst *req,
+				struct xdr_stream *xdr,
+				void *obj)
 {
 	struct gssx_arg_accept_sec_context *arg = obj;
 	int err;
@@ -786,6 +786,7 @@ void gssx_enc_accept_sec_context(struct rpc_rqst *req,
 done:
 	if (err)
 		dprintk("RPC:       gssx_enc_accept_sec_context: %d\n", err);
+	return 0;
 }
 
 int gssx_dec_accept_sec_context(struct rpc_rqst *rqstp,

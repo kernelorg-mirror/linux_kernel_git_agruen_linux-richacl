@@ -526,19 +526,21 @@ static void encode_priv(struct xdr_stream *xdr, const struct nsm_args *argp)
 	xdr_encode_opaque_fixed(p, argp->priv->data, SM_PRIV_SIZE);
 }
 
-static void nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
-			    void *obj)
+static int nsm_xdr_enc_mon(struct rpc_rqst *req, struct xdr_stream *xdr,
+			   void *obj)
 {
 	const struct nsm_args *argp = obj;
 	encode_mon_id(xdr, argp);
 	encode_priv(xdr, argp);
+	return 0;
 }
 
-static void nsm_xdr_enc_unmon(struct rpc_rqst *req, struct xdr_stream *xdr,
-			      void *obj)
+static int nsm_xdr_enc_unmon(struct rpc_rqst *req, struct xdr_stream *xdr,
+			     void *obj)
 {
 	const struct nsm_args *argp = obj;
 	encode_mon_id(xdr, argp);
+	return 0;
 }
 
 static int nsm_xdr_dec_stat_res(struct rpc_rqst *rqstp,

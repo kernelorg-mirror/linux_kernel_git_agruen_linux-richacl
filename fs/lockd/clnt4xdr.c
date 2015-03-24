@@ -379,9 +379,9 @@ static void encode_nlm4_lock(struct xdr_stream *xdr,
  *		struct nlm4_lock alock;
  *	};
  */
-static void nlm4_xdr_enc_testargs(struct rpc_rqst *req,
-				  struct xdr_stream *xdr,
-				  void *obj)
+static int nlm4_xdr_enc_testargs(struct rpc_rqst *req,
+				 struct xdr_stream *xdr,
+				 void *obj)
 {
 	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
@@ -389,6 +389,7 @@ static void nlm4_xdr_enc_testargs(struct rpc_rqst *req,
 	encode_cookie(xdr, &args->cookie);
 	encode_bool(xdr, lock->fl.fl_type == F_WRLCK);
 	encode_nlm4_lock(xdr, lock);
+	return 0;
 }
 
 /*
@@ -401,9 +402,9 @@ static void nlm4_xdr_enc_testargs(struct rpc_rqst *req,
  *		int state;
  *	};
  */
-static void nlm4_xdr_enc_lockargs(struct rpc_rqst *req,
-				  struct xdr_stream *xdr,
-				  void *obj)
+static int nlm4_xdr_enc_lockargs(struct rpc_rqst *req,
+				 struct xdr_stream *xdr,
+				 void *obj)
 {
 	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
@@ -414,6 +415,7 @@ static void nlm4_xdr_enc_lockargs(struct rpc_rqst *req,
 	encode_nlm4_lock(xdr, lock);
 	encode_bool(xdr, args->reclaim);
 	encode_int32(xdr, args->state);
+	return 0;
 }
 
 /*
@@ -424,9 +426,9 @@ static void nlm4_xdr_enc_lockargs(struct rpc_rqst *req,
  *		struct nlm4_lock alock;
  *	};
  */
-static void nlm4_xdr_enc_cancargs(struct rpc_rqst *req,
-				  struct xdr_stream *xdr,
-				  void *obj)
+static int nlm4_xdr_enc_cancargs(struct rpc_rqst *req,
+				 struct xdr_stream *xdr,
+				 void *obj)
 {
 	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
@@ -435,6 +437,7 @@ static void nlm4_xdr_enc_cancargs(struct rpc_rqst *req,
 	encode_bool(xdr, args->block);
 	encode_bool(xdr, lock->fl.fl_type == F_WRLCK);
 	encode_nlm4_lock(xdr, lock);
+	return 0;
 }
 
 /*
@@ -443,15 +446,16 @@ static void nlm4_xdr_enc_cancargs(struct rpc_rqst *req,
  *		struct nlm4_lock alock;
  *	};
  */
-static void nlm4_xdr_enc_unlockargs(struct rpc_rqst *req,
-				    struct xdr_stream *xdr,
-				    void *obj)
+static int nlm4_xdr_enc_unlockargs(struct rpc_rqst *req,
+				   struct xdr_stream *xdr,
+				   void *obj)
 {
 	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
 
 	encode_cookie(xdr, &args->cookie);
 	encode_nlm4_lock(xdr, lock);
+	return 0;
 }
 
 /*
@@ -460,13 +464,14 @@ static void nlm4_xdr_enc_unlockargs(struct rpc_rqst *req,
  *		nlm4_stat stat;
  *	};
  */
-static void nlm4_xdr_enc_res(struct rpc_rqst *req,
-			     struct xdr_stream *xdr,
-			     void *obj)
+static int nlm4_xdr_enc_res(struct rpc_rqst *req,
+			    struct xdr_stream *xdr,
+			    void *obj)
 {
 	const struct nlm_res *result = obj;
 	encode_cookie(xdr, &result->cookie);
 	encode_nlm4_stat(xdr, result->status);
+	return 0;
 }
 
 /*
@@ -482,15 +487,16 @@ static void nlm4_xdr_enc_res(struct rpc_rqst *req,
  *		nlm4_testrply test_stat;
  *	};
  */
-static void nlm4_xdr_enc_testres(struct rpc_rqst *req,
-				 struct xdr_stream *xdr,
-				 void *obj)
+static int nlm4_xdr_enc_testres(struct rpc_rqst *req,
+				struct xdr_stream *xdr,
+				void *obj)
 {
 	const struct nlm_res *result = obj;
 	encode_cookie(xdr, &result->cookie);
 	encode_nlm4_stat(xdr, result->status);
 	if (result->status == nlm_lck_denied)
 		encode_nlm4_holder(xdr, result);
+	return 0;
 }
 
 
