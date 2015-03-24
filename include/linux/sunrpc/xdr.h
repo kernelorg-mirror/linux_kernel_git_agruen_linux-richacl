@@ -211,7 +211,7 @@ struct xdr_stream {
  * These are the xdr_stream style generic XDR encode and decode functions.
  */
 struct rpc_rqst;
-typedef void	(*kxdreproc_t)(struct rpc_rqst *rqstp, struct xdr_stream *xdr, void *obj);
+typedef int	(*kxdreproc_t)(struct rpc_rqst *rqstp, struct xdr_stream *xdr, void *obj);
 typedef int	(*kxdrdproc_t)(struct rpc_rqst *rqstp, struct xdr_stream *xdr, void *obj);
 
 extern void xdr_init_encode(struct xdr_stream *xdr, struct xdr_buf *buf, __be32 *p);

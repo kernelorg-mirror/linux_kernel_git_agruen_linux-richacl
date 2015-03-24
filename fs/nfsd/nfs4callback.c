@@ -470,17 +470,18 @@ static int decode_cb_sequence4res(struct xdr_stream *xdr,
 /*
  * NB: Without this zero space reservation, callbacks over krb5p fail
  */
-static void nfs4_xdr_enc_cb_null(struct rpc_rqst *req, struct xdr_stream *xdr,
-				 void *__unused)
+static int nfs4_xdr_enc_cb_null(struct rpc_rqst *req, struct xdr_stream *xdr,
+				void *__unused)
 {
 	xdr_reserve_space(xdr, 0);
+	return 0;
 }
 
 /*
  * 20.2. Operation 4: CB_RECALL - Recall a Delegation
  */
-static void nfs4_xdr_enc_cb_recall(struct rpc_rqst *req, struct xdr_stream *xdr,
-				   void *obj)
+static int nfs4_xdr_enc_cb_recall(struct rpc_rqst *req, struct xdr_stream *xdr,
+				  void *obj)
 {
 	const struct nfsd4_callback *cb = obj;
 	const struct nfs4_delegation *dp = cb_to_delegation(cb);
@@ -493,6 +494,7 @@ static void nfs4_xdr_enc_cb_recall(struct rpc_rqst *req, struct xdr_stream *xdr,
 	encode_cb_sequence4args(xdr, cb, &hdr);
 	encode_cb_recall4args(xdr, dp, &hdr);
 	encode_cb_nops(&hdr);
+	return 0;
 }
 
 
@@ -588,9 +590,9 @@ static void encode_cb_layout4args(struct xdr_stream *xdr,
 	hdr->nops++;
 }
 
-static void nfs4_xdr_enc_cb_layout(struct rpc_rqst *req,
-				   struct xdr_stream *xdr,
-				   void *obj)
+static int nfs4_xdr_enc_cb_layout(struct rpc_rqst *req,
+				  struct xdr_stream *xdr,
+				  void *obj)
 {
 	const struct nfsd4_callback *cb = obj;
 	const struct nfs4_layout_stateid *ls =
@@ -604,6 +606,7 @@ static void nfs4_xdr_enc_cb_layout(struct rpc_rqst *req,
 	encode_cb_sequence4args(xdr, cb, &hdr);
 	encode_cb_layout4args(xdr, ls, &hdr);
 	encode_cb_nops(&hdr);
+	return 0;
 }
 
 static int nfs4_xdr_dec_cb_layout(struct rpc_rqst *rqstp,
