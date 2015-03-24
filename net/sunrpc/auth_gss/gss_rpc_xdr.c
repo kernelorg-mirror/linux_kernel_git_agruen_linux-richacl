@@ -733,8 +733,9 @@ static int gssx_enc_cb(struct xdr_stream *xdr, struct gssx_cb *cb)
 
 void gssx_enc_accept_sec_context(struct rpc_rqst *req,
 				 struct xdr_stream *xdr,
-				 struct gssx_arg_accept_sec_context *arg)
+				 void *obj)
 {
+	struct gssx_arg_accept_sec_context *arg = obj;
 	int err;
 
 	err = gssx_enc_call_ctx(xdr, &arg->call_ctx);
@@ -789,8 +790,9 @@ done:
 
 int gssx_dec_accept_sec_context(struct rpc_rqst *rqstp,
 				struct xdr_stream *xdr,
-				struct gssx_res_accept_sec_context *res)
+				void *obj)
 {
+	struct gssx_res_accept_sec_context *res = obj;
 	u32 value_follows;
 	int err;
 	struct page *scratch;
