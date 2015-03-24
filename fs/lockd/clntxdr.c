@@ -374,8 +374,9 @@ static void encode_nlm_lock(struct xdr_stream *xdr,
  */
 static void nlm_xdr_enc_testargs(struct rpc_rqst *req,
 				 struct xdr_stream *xdr,
-				 const struct nlm_args *args)
+				 void *obj)
 {
+	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
 
 	encode_cookie(xdr, &args->cookie);
@@ -395,8 +396,9 @@ static void nlm_xdr_enc_testargs(struct rpc_rqst *req,
  */
 static void nlm_xdr_enc_lockargs(struct rpc_rqst *req,
 				 struct xdr_stream *xdr,
-				 const struct nlm_args *args)
+				 void *obj)
 {
+	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
 
 	encode_cookie(xdr, &args->cookie);
@@ -417,8 +419,9 @@ static void nlm_xdr_enc_lockargs(struct rpc_rqst *req,
  */
 static void nlm_xdr_enc_cancargs(struct rpc_rqst *req,
 				 struct xdr_stream *xdr,
-				 const struct nlm_args *args)
+				 void *obj)
 {
+	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
 
 	encode_cookie(xdr, &args->cookie);
@@ -435,8 +438,9 @@ static void nlm_xdr_enc_cancargs(struct rpc_rqst *req,
  */
 static void nlm_xdr_enc_unlockargs(struct rpc_rqst *req,
 				   struct xdr_stream *xdr,
-				   const struct nlm_args *args)
+				   void *obj)
 {
+	const struct nlm_args *args = obj;
 	const struct nlm_lock *lock = &args->lock;
 
 	encode_cookie(xdr, &args->cookie);
@@ -451,8 +455,9 @@ static void nlm_xdr_enc_unlockargs(struct rpc_rqst *req,
  */
 static void nlm_xdr_enc_res(struct rpc_rqst *req,
 			    struct xdr_stream *xdr,
-			    const struct nlm_res *result)
+			    void *obj)
 {
+	const struct nlm_res *result = obj;
 	encode_cookie(xdr, &result->cookie);
 	encode_nlm_stat(xdr, result->status);
 }
@@ -479,8 +484,9 @@ static void encode_nlm_testrply(struct xdr_stream *xdr,
 
 static void nlm_xdr_enc_testres(struct rpc_rqst *req,
 				struct xdr_stream *xdr,
-				const struct nlm_res *result)
+				void *obj)
 {
+	const struct nlm_res *result = obj;
 	encode_cookie(xdr, &result->cookie);
 	encode_nlm_stat(xdr, result->status);
 	encode_nlm_testrply(xdr, result);
@@ -523,8 +529,9 @@ out:
 
 static int nlm_xdr_dec_testres(struct rpc_rqst *req,
 			       struct xdr_stream *xdr,
-			       struct nlm_res *result)
+			       void *obj)
 {
+	struct nlm_res *result = obj;
 	int error;
 
 	error = decode_cookie(xdr, &result->cookie);
@@ -543,8 +550,9 @@ out:
  */
 static int nlm_xdr_dec_res(struct rpc_rqst *req,
 			   struct xdr_stream *xdr,
-			   struct nlm_res *result)
+			   void *obj)
 {
+	struct nlm_res *result = obj;
 	int error;
 
 	error = decode_cookie(xdr, &result->cookie);
@@ -564,8 +572,8 @@ out:
 #define PROC(proc, argtype, restype)	\
 [NLMPROC_##proc] = {							\
 	.p_proc      = NLMPROC_##proc,					\
-	.p_encode    = (kxdreproc_t)nlm_xdr_enc_##argtype,		\
-	.p_decode    = (kxdrdproc_t)nlm_xdr_dec_##restype,		\
+	.p_encode    = nlm_xdr_enc_##argtype,		\
+	.p_decode    = nlm_xdr_dec_##restype,		\
 	.p_arglen    = NLM_##argtype##_sz,				\
 	.p_replen    = NLM_##restype##_sz,				\
 	.p_statidx   = NLMPROC_##proc,					\
