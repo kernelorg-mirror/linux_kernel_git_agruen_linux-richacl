@@ -1384,13 +1384,14 @@ static int nfs3_xdr_enc_setacl3args(struct rpc_rqst *req,
 	error = nfsacl_encode(xdr->buf, base, args->inode,
 			    (args->mask & NFS_ACL) ?
 			    args->acl_access : NULL, 1, 0);
-	/* FIXME: this is just broken */
-	BUG_ON(error < 0);
+	if (error < 0)
+		return error;
 	error = nfsacl_encode(xdr->buf, base + error, args->inode,
 			    (args->mask & NFS_DFACL) ?
 			    args->acl_default : NULL, 1,
 			    NFS_ACL_DEFAULT);
-	BUG_ON(error < 0);
+	if (error < 0)
+		return error;
 	return 0;
 }
 
