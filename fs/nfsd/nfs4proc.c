@@ -1804,6 +1804,8 @@ static inline u32 nfsd4_getattr_rsize(struct svc_rqst *rqstp,
 		ret += NFS4_FHSIZE + 4;
 		bmap0 &= ~FATTR4_WORD0_FILEHANDLE;
 	}
+	if (bmap1 & FATTR4_WORD1_DACL)
+		return svc_max_payload(rqstp);
 	if (bmap2 & FATTR4_WORD2_SECURITY_LABEL) {
 		ret += NFS4_MAXLABELLEN + 12;
 		bmap2 &= ~FATTR4_WORD2_SECURITY_LABEL;
