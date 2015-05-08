@@ -509,6 +509,49 @@ void xdr_commit_encode(struct xdr_stream *xdr)
 }
 EXPORT_SYMBOL_GPL(xdr_commit_encode);
 
+/**
+ * xdr_encode_inline  -  Add pages to encode into
+ *
+ * Add a pages array to an xdr_stream that xdr_reserve_space() and the like
+ * will encode into.  Any space avaliable in the head is used before using the
+ * pages.  The tail is not used.
+ *
+ * The page pointers in the array can be set to NULL for allocating pages on
+ * demand as more buffer space is consumed.
+ *
+ * Call xdr_end_inline() when all data has been encoded.
+ */
+void
+xdr_encode_inline(struct xdr_stream *xdr, struct page **pages, unsigned int page_len)
+{
+	struct xdr_buf *buf = xdr->buf;
+
+	buf->pages = pages;
+	buf->page_base = 0;
+	buf->page_len = page_len;
+
+	buf->buflen += page_len;
+
+	xdr->page_ptr = pages - 1;
+}
+EXPORT_SYMBOL_GPL(xdr_encode_inline);
+
+/**
+ * xdr_end_inline  -  End encoding into head + pages
+ *
+ * Set buf->page_len to the used size from the allocated size.
+ */
+void
+xdr_end_inline(struct xdr_stream *xdr)
+{
+	struct xdr_buf *buf = xdr->buf;
+	unsigned int page_len = buf->len - buf->head->iov_len;
+
+	xdr_commit_encode(xdr);
+	buf->page_len = page_len;
+}
+EXPORT_SYMBOL_GPL(xdr_end_inline);
+
 static __be32 *xdr_get_next_encode_buffer(struct xdr_stream *xdr,
 		size_t nbytes)
 {
