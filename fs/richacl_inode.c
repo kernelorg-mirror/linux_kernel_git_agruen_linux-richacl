@@ -161,8 +161,10 @@ richacl_permission(struct inode *inode, const struct richacl *acl,
 		} else if (richace_is_unix_group(ace)) {
 			if (!in_group_p(ace->e_id.gid))
 				continue;
-		} else
+		} else if (richace_is_everyone(ace))
 			goto entry_matches_everyone;
+		else
+			continue;
 
 		/*
 		 * Apply the group file mask to entries other than owner@ and
