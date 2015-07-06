@@ -62,6 +62,10 @@ __ext4_set_richacl(handle_t *handle, struct inode *inode, struct richacl *acl)
 	int retval;
 
 	if (acl) {
+		/* Don't allow acls with unmapped identifiers. */
+		if (richacl_has_unmapped_identifiers(acl))
+			return -EINVAL;
+
 		if (richacl_equiv_mode(acl, &mode) == 0) {
 			inode->i_ctime = ext4_current_time(inode);
 			inode->i_mode = mode;
