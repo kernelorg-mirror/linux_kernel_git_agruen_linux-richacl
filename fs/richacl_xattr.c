@@ -35,7 +35,8 @@ richacl_from_xattr(struct user_namespace *user_ns,
 	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
 	struct richacl *acl;
 	struct richace *ace;
-	int count;
+	unsigned int count, offset;
+	char *unmapped;
 
 	if (size < sizeof(*xattr_acl) ||
 	    xattr_acl->a_version != RICHACL_XATTR_VERSION ||
@@ -45,10 +46,11 @@ richacl_from_xattr(struct user_namespace *user_ns,
 	count = le16_to_cpu(xattr_acl->a_count);
 	if (count > RICHACL_XATTR_MAX_COUNT)
 		return ERR_PTR(-EINVAL);
-	if (size != count * sizeof(*xattr_ace))
+	if (size < count * sizeof(*xattr_ace))
 		return ERR_PTR(-EINVAL);
+	size -= count * sizeof(*xattr_ace);
 
-	acl = richacl_alloc(count, GFP_NOFS);
+	acl = __richacl_alloc(count, size, GFP_NOFS);
 	if (!acl)
 		return ERR_PTR(-ENOMEM);
 
@@ -63,6 +65,16 @@ richacl_from_xattr(struct user_namespace *user_ns,
 	if (acl->a_other_mask & ~RICHACE_VALID_MASK)
 		goto fail_einval;
 
+	unmapped = (char *)(acl->a_entries + count);
+	if (size) {
+		char *xattr_unmapped = (char *)(xattr_ace + count);
+
+		if (xattr_unmapped[size - 1] != 0)
+			goto fail_einval;
+		memcpy(unmapped, xattr_unmapped, size);
+	}
+	offset = 0;
+
 	richacl_for_each_entry(ace, acl) {
 		ace->e_type  = le16_to_cpu(xattr_ace->e_type);
 		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
@@ -74,6 +86,15 @@ richacl_from_xattr(struct user_namespace *user_ns,
 			ace->e_id.special = le32_to_cpu(xattr_ace->e_id);
 			if (ace->e_id.special > RICHACE_EVERYONE_SPECIAL_ID)
 				goto fail_einval;
+		} else if (ace->e_flags & RICHACE_UNMAPPED_WHO) {
+			size_t sz;
+
+			if (offset == size)
+				goto fail_einval;
+			ace->e_id.offs = offset;
+			sz = strlen(unmapped) + 1;
+			unmapped += sz;
+			offset += sz;
 		} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
 			u32 id = le32_to_cpu(xattr_ace->e_id);
 
@@ -90,9 +111,11 @@ richacl_from_xattr(struct user_namespace *user_ns,
 		if (ace->e_type > RICHACE_ACCESS_DENIED_ACE_TYPE ||
 		    (ace->e_mask & ~RICHACE_VALID_MASK))
 			goto fail_einval;
-
 		xattr_ace++;
 	}
+
+	if (offset != size)
+		goto fail_einval;
 
 	return acl;
 
@@ -109,8 +132,15 @@ size_t
 richacl_xattr_size(const struct richacl *acl)
 {
 	size_t size = sizeof(struct richacl_xattr);
+	const struct richace *ace;
 
 	size += sizeof(struct richace_xattr) * acl->a_count;
+	richacl_for_each_entry(ace, acl) {
+		const char *unmapped = richace_unmapped_identifier(ace, acl);
+
+		if (unmapped)
+			size += strlen(unmapped) + 1;
+	}
 	return size;
 }
 EXPORT_SYMBOL_GPL(richacl_xattr_size);
@@ -129,6 +159,7 @@ richacl_to_xattr(struct user_namespace *user_ns,
 	struct richace_xattr *xattr_ace;
 	const struct richace *ace;
 	size_t real_size;
+	char *xattr_unmapped;
 
 	real_size = richacl_xattr_size(acl);
 	if (!buffer)
@@ -145,18 +176,33 @@ richacl_to_xattr(struct user_namespace *user_ns,
 	xattr_acl->a_other_mask = cpu_to_le32(acl->a_other_mask);
 
 	xattr_ace = (void *)(xattr_acl + 1);
+	xattr_unmapped = (char *)(xattr_ace + acl->a_count);
 	richacl_for_each_entry(ace, acl) {
+		const char *who;
+
 		xattr_ace->e_type = cpu_to_le16(ace->e_type);
 		xattr_ace->e_flags = cpu_to_le16(ace->e_flags);
 		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
 		if (ace->e_flags & RICHACE_SPECIAL_WHO)
 			xattr_ace->e_id = cpu_to_le32(ace->e_id.special);
-		else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP)
-			xattr_ace->e_id =
-				cpu_to_le32(from_kgid(user_ns, ace->e_id.gid));
-		else
-			xattr_ace->e_id =
-				cpu_to_le32(from_kuid(user_ns, ace->e_id.uid));
+		else {
+			who = richace_unmapped_identifier(ace, acl);
+			if (who) {
+				size_t sz = strlen(who) + 1;
+
+				xattr_ace->e_id = 0;
+				memcpy(xattr_unmapped, who, sz);
+				xattr_unmapped += sz;
+			} else if (ace->e_flags & RICHACE_IDENTIFIER_GROUP) {
+				u32 id = from_kgid(user_ns, ace->e_id.gid);
+
+				xattr_ace->e_id = cpu_to_le32(id);
+			} else {
+				u32 id = from_kuid(user_ns, ace->e_id.uid);
+
+				xattr_ace->e_id = cpu_to_le32(id);
+			}
+		}
 		xattr_ace++;
 	}
 	return real_size;
