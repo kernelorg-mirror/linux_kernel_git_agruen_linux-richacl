@@ -1649,9 +1649,16 @@ encode_setacl(struct xdr_stream *xdr, struct nfs_setaclargs *arg, struct compoun
 	encode_nfs4_stateid(xdr, &zero_stateid);
 
 	/* Encode attribute bitmap. */
-	p = reserve_space(xdr, 2*4);
-	*p++ = cpu_to_be32(1);
-	*p = cpu_to_be32(FATTR4_WORD0_ACL);
+	if (arg->server->attr_bitmask[1] & FATTR4_WORD1_DACL) {
+		p = reserve_space(xdr, 3*4);
+		*p++ = cpu_to_be32(2);
+		*p++ = 0;
+		*p = cpu_to_be32(FATTR4_WORD1_DACL);
+	} else {
+		p = reserve_space(xdr, 2*4);
+		*p++ = cpu_to_be32(1);
+		*p = cpu_to_be32(FATTR4_WORD0_ACL);
+	}
 
 	attrlen_offset = xdr->buf->len;
 	xdr_reserve_space(xdr, 4);  /* to be backfilled later */
@@ -2486,9 +2493,12 @@ static void nfs4_xdr_enc_getacl(struct rpc_rqst *req, struct xdr_stream *xdr,
 
 	encode_compound_hdr(xdr, req, &hdr);
 	encode_sequence(xdr, &args->seq_args, &hdr);
-	encode_putfh(xdr, args->fh, &hdr);
+	encode_putfh(xdr, NFS_FH(args->inode), &hdr);
 	replen = hdr.replen + op_decode_hdr_maxsz + 1;
-	encode_getattr_two(xdr, FATTR4_WORD0_ACL, FATTR4_WORD1_MODE, &hdr);
+	if (NFS_SERVER(args->inode)->attr_bitmask[1] & FATTR4_WORD1_DACL)
+		encode_getattr_two(xdr, 0, FATTR4_WORD1_MODE | FATTR4_WORD1_DACL, &hdr);
+	else
+		encode_getattr_two(xdr, FATTR4_WORD0_ACL, FATTR4_WORD1_MODE, &hdr);
 
 	xdr_inline_pages(&req->rq_rcv_buf, replen << 2,
 		args->acl_pages, 0, args->acl_len);
@@ -5376,14 +5386,28 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
 
 	if (unlikely(bitmap[0] & (FATTR4_WORD0_ACL - 1U)))
 		return -EIO;
-	if (likely(bitmap[0] & FATTR4_WORD0_ACL)) {
+
+	if (bitmap[0] & FATTR4_WORD0_ACL) {
+		struct richace *ace;
+
+		if (bitmap[1] & FATTR4_WORD1_DACL)
+			return -EIO;
+
 		acl = decode_acl_entries(xdr, res->server);
 		status = PTR_ERR(acl);
 		if (IS_ERR(acl))
 			goto out;
+
+		status = -EIO;
+		richacl_for_each_entry(ace, acl) {
+			if (ace->e_flags & RICHACE_INHERITED_ACE)
+				goto out;
+		}
 		bitmap[0] &= ~FATTR4_WORD0_ACL;
-	} else
+	} else if (!(bitmap[1] & FATTR4_WORD1_DACL)) {
 		status = -EOPNOTSUPP;
+		goto out;
+	}
 
 	status = -EIO;
 	if (unlikely(bitmap[0]))
@@ -5391,6 +5415,23 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
 
 	if ((status = decode_attr_mode(xdr, bitmap, &res->mode)) < 0)
 		goto out;
+	if (bitmap[1] & FATTR4_WORD1_DACL) {
+		unsigned int flags;
+		__be32 *p;
+
+		p = xdr_inline_decode(xdr, 4);
+                status = -EIO;
+                if (unlikely(!p))
+                        goto out;
+                flags = be32_to_cpup(p);
+
+		acl = decode_acl_entries(xdr, res->server);
+		status = PTR_ERR(acl);
+		if (IS_ERR(acl))
+			goto out;
+		acl->a_flags = flags;
+		bitmap[1] &= ~FATTR4_WORD1_DACL;
+	}
 	status = 0;
 
 out:
