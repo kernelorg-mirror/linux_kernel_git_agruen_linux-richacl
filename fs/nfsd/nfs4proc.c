@@ -599,14 +599,15 @@ static __be32
 nfsd4_create(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	     struct nfsd4_create *create)
 {
+	int access = create->cr_type == NF4DIR ?
+		NFSD_MAY_CREATE_DIR : NFSD_MAY_CREATE_FILE;
 	struct svc_fh resfh;
 	__be32 status;
 	dev_t rdev;
 
 	fh_init(&resfh, NFS4_FHSIZE);
 
-	status = fh_verify(rqstp, &cstate->current_fh, S_IFDIR,
-			   NFSD_MAY_CREATE);
+	status = fh_verify(rqstp, &cstate->current_fh, S_IFDIR, access);
 	if (status)
 		return status;
 
