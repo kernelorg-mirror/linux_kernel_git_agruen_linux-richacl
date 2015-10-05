@@ -543,6 +543,28 @@ restart:
 EXPORT_SYMBOL_GPL(richacl_compute_max_masks);
 
 /**
+ * set_richacl  -  set the richacl of an inode
+ * @inode:	inode whose richacl to set
+ * @acl:	access control list
+ */
+int
+set_richacl(struct inode *inode, struct richacl *acl)
+{
+	if (!IS_RICHACL(inode))
+		return -EOPNOTSUPP;
+	if (!inode->i_op->set_richacl)
+		return -EOPNOTSUPP;
+
+	if (!uid_eq(current_fsuid(), inode->i_uid) &&
+	    inode_permission(inode, MAY_CHMOD) &&
+	    !capable(CAP_FOWNER))
+		return -EPERM;
+
+	return inode->i_op->set_richacl(inode, acl);
+}
+EXPORT_SYMBOL(set_richacl);
+
+/**
  * __richacl_chmod  -  update the file masks to reflect the new mode
  * @acl:	access control list
  * @mode:	new file permission bits including the file type
