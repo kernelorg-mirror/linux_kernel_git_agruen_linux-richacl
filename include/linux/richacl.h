@@ -205,5 +205,6 @@ extern int richacl_chmod(struct inode *, umode_t);
 extern int richacl_equiv_mode(const struct richacl *, umode_t *);
 extern struct richacl *richacl_inherit(const struct richacl *, int);
 extern struct richacl *richacl_create(umode_t *, struct inode *);
+extern int set_richacl(struct inode *, struct richacl *);
 
 #endif /* __RICHACL_H */
