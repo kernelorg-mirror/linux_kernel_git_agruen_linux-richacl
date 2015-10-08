@@ -1547,7 +1547,11 @@ xfs_fs_fill_super(
 	sb->s_maxbytes = xfs_max_file_offset(sb->s_blocksize_bits);
 	sb->s_max_links = XFS_MAXLINK;
 	sb->s_time_gran = 1;
-	set_posix_acl_flag(sb);
+
+	if (xfs_sb_version_hasrichacl(&mp->m_sb))
+		set_richacl_flag(sb);
+	else
+		set_posix_acl_flag(sb);
 
 	/* version 5 superblocks support inode version counters. */
 	if (XFS_SB_VERSION_NUM(&mp->m_sb) == XFS_SB_VERSION_5)
