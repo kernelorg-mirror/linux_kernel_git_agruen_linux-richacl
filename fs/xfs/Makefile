@@ -84,6 +84,7 @@ xfs-y				+= xfs_aops.o \
 				   xfs_message.o \
 				   xfs_mount.o \
 				   xfs_mru_cache.o \
+				   xfs_richacl.o \
 				   xfs_stats.o \
 				   xfs_super.o \
 				   xfs_symlink.o \
