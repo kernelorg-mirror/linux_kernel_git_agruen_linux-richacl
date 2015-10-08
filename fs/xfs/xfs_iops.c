@@ -27,6 +27,7 @@
 #include "xfs_bmap.h"
 #include "xfs_bmap_util.h"
 #include "xfs_acl.h"
+#include "xfs_richacl.h"
 #include "xfs_quota.h"
 #include "xfs_error.h"
 #include "xfs_attr.h"
@@ -42,7 +43,7 @@
 
 #include <linux/capability.h>
 #include <linux/xattr.h>
-#include <linux/posix_acl.h>
+#include <linux/acl.h>
 #include <linux/security.h>
 #include <linux/iomap.h>
 #include <linux/slab.h>
@@ -149,7 +150,8 @@ xfs_generic_create(
 {
 	struct inode	*inode;
 	struct xfs_inode *ip = NULL;
-	struct posix_acl *default_acl, *acl;
+	struct posix_acl *default_acl = NULL, *acl = NULL;
+	struct richacl *richacl = NULL;
 	struct xfs_name	name;
 	int		error;
 
@@ -165,9 +167,15 @@ xfs_generic_create(
 		rdev = 0;
 	}
 
-	error = posix_acl_create(dir, &mode, &default_acl, &acl);
-	if (error)
-		return error;
+	if (IS_RICHACL(dir)) {
+		richacl = richacl_create(&mode, dir);
+		if (IS_ERR(richacl))
+			return PTR_ERR(richacl);
+	} else {
+		error = posix_acl_create(dir, &mode, &default_acl, &acl);
+		if (error)
+			return error;
+	}
 
 	/* Verify mode is valid also for tmpfile case */
 	error = xfs_dentry_mode_to_name(&name, dentry, mode);
@@ -200,6 +208,11 @@ xfs_generic_create(
 			goto out_cleanup_inode;
 	}
 #endif
+	if (richacl) {
+		error = xfs_set_richacl(inode, richacl);
+		if (error)
+			goto out_cleanup_inode;
+	}
 
 	xfs_setup_iops(ip);
 
@@ -211,10 +224,9 @@ xfs_generic_create(
 	xfs_finish_inode_setup(ip);
 
  out_free_acl:
-	if (default_acl)
-		posix_acl_release(default_acl);
-	if (acl)
-		posix_acl_release(acl);
+	posix_acl_release(default_acl);
+	posix_acl_release(acl);
+	richacl_put(richacl);
 	return error;
 
  out_cleanup_inode:
@@ -765,7 +777,7 @@ xfs_setattr_nonsize(
 	 * 	     Posix ACL code seems to care about this issue either.
 	 */
 	if ((mask & ATTR_MODE) && !(flags & XFS_ATTR_NOACL)) {
-		error = posix_acl_chmod(inode, inode->i_mode);
+		error = acl_chmod(inode);
 		if (error)
 			return error;
 	}
@@ -1092,6 +1104,8 @@ xfs_vn_tmpfile(
 static const struct inode_operations xfs_inode_operations = {
 	.get_acl		= xfs_get_acl,
 	.set_acl		= xfs_set_acl,
+	.get_richacl		= xfs_get_richacl,
+	.set_richacl		= xfs_set_richacl,
 	.getattr		= xfs_vn_getattr,
 	.setattr		= xfs_vn_setattr,
 	.listxattr		= xfs_vn_listxattr,
@@ -1117,6 +1131,8 @@ static const struct inode_operations xfs_dir_inode_operations = {
 	.rename			= xfs_vn_rename,
 	.get_acl		= xfs_get_acl,
 	.set_acl		= xfs_set_acl,
+	.get_richacl		= xfs_get_richacl,
+	.set_richacl		= xfs_set_richacl,
 	.getattr		= xfs_vn_getattr,
 	.setattr		= xfs_vn_setattr,
 	.listxattr		= xfs_vn_listxattr,
@@ -1142,6 +1158,8 @@ static const struct inode_operations xfs_dir_ci_inode_operations = {
 	.rename			= xfs_vn_rename,
 	.get_acl		= xfs_get_acl,
 	.set_acl		= xfs_set_acl,
+	.get_richacl		= xfs_get_richacl,
+	.set_richacl		= xfs_set_richacl,
 	.getattr		= xfs_vn_getattr,
 	.setattr		= xfs_vn_setattr,
 	.listxattr		= xfs_vn_listxattr,
