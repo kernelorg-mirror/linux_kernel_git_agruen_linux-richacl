@@ -28,6 +28,7 @@
 #include "xfs_acl.h"
 
 #include <linux/posix_acl_xattr.h>
+#include <linux/richacl_xattr.h>
 #include <linux/xattr.h>
 
 
@@ -102,6 +103,9 @@ const struct xattr_handler *xfs_xattr_handlers[] = {
 #ifdef CONFIG_XFS_POSIX_ACL
 	&posix_acl_access_xattr_handler,
 	&posix_acl_default_xattr_handler,
+#endif
+#ifdef CONFIG_XFS_RICHACL
+	&richacl_xattr_handler,
 #endif
 	NULL
 };

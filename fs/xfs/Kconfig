@@ -52,6 +52,17 @@ config XFS_POSIX_ACL
 
 	  If you don't know what Access Control Lists are, say N.
 
+config XFS_RICHACL
+        bool "XFS Rich Access Control Lists (EXPERIMENTAL)"
+        depends on XFS_FS
+        select FS_RICHACL
+        help
+          Richacls are an implementation of NFSv4 ACLs, extended by file masks
+          to cleanly integrate into the POSIX file permission model.  To learn
+	  more about them, see http://www.bestbits.at/richacl/.
+
+          If you don't know what Richacls are, say N.
+
 config XFS_RT
 	bool "XFS Realtime subvolume support"
 	depends on XFS_FS

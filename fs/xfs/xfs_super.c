@@ -1500,7 +1500,19 @@ xfs_fs_fill_super(
 	sb->s_maxbytes = xfs_max_file_offset(sb->s_blocksize_bits);
 	sb->s_max_links = XFS_MAXLINK;
 	sb->s_time_gran = 1;
-	set_posix_acl_flag(sb);
+
+	if (xfs_sb_version_hasrichacl(&mp->m_sb)) {
+#ifdef CONFIG_XFS_RICHACL
+		sb->s_flags |= MS_RICHACL;
+#else
+		error = -EOPNOTSUPP;
+		goto out_free_sb;
+#endif
+	} else {
+#ifdef CONFIG_XFS_POSIX_ACL
+		sb->s_flags |= MS_POSIXACL;
+#endif
+	}
 
 	/* version 5 superblocks support inode version counters. */
 	if (XFS_SB_VERSION_NUM(&mp->m_sb) == XFS_SB_VERSION_5)

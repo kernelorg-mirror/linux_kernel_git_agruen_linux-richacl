@@ -24,7 +24,6 @@
 
 extern struct richacl *ext4_get_richacl(struct inode *);
 extern int ext4_set_richacl(struct inode *, struct richacl *);
-
 extern int ext4_init_richacl(handle_t *, struct inode *, struct inode *);
 
 #else  /* CONFIG_EXT4_FS_RICHACL */

@@ -30,10 +30,14 @@ extern void xfs_qm_exit(void);
 
 #ifdef CONFIG_XFS_POSIX_ACL
 # define XFS_ACL_STRING		"ACLs, "
-# define set_posix_acl_flag(sb)	((sb)->s_flags |= MS_POSIXACL)
 #else
 # define XFS_ACL_STRING
-# define set_posix_acl_flag(sb)	do { } while (0)
+#endif
+
+#ifdef CONFIG_XFS_RICHACL
+# define XFS_RICHACL_STRING	"Richacls, "
+#else
+# define XFS_RICHACL_STRING
 #endif
 
 #define XFS_SECURITY_STRING	"security attributes, "
@@ -52,6 +56,7 @@ extern void xfs_qm_exit(void);
 
 #define XFS_VERSION_STRING	"SGI XFS"
 #define XFS_BUILD_OPTIONS	XFS_ACL_STRING \
+				XFS_RICHACL_STRING \
 				XFS_SECURITY_STRING \
 				XFS_REALTIME_STRING \
 				XFS_DBG_STRING /* DBG must be last */

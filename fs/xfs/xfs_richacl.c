@@ -1,0 +1,97 @@
+/*
+ * Copyright (C) 2015  Red Hat, Inc.
+ * Author: Andreas Gruenbacher <agruenba@redhat.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2.1 of the GNU Lesser General Public License
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it would be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ */
+
+#include "xfs.h"
+#include "xfs_format.h"
+#include "xfs_log_format.h"
+#include "xfs_inode.h"
+#include "xfs_attr.h"
+
+#include <linux/richacl_xattr.h>
+
+struct richacl *
+xfs_get_richacl(struct inode *inode)
+{
+	struct xfs_inode *ip = XFS_I(inode);
+	struct richacl *acl;
+	int size = XATTR_SIZE_MAX;
+	void *value;
+	int error;
+
+	value = kmem_zalloc_large(size, KM_SLEEP);
+	if (!value)
+		return ERR_PTR(-ENOMEM);
+
+	error = xfs_attr_get(ip, XATTR_NAME_RICHACL, value, &size, ATTR_ROOT);
+	if (error) {
+		/*
+		 * If the attribute doesn't exist make sure we have a negative
+		 * cache entry, for any other error assume it is transient and
+		 * leave the cache entry as ACL_NOT_CACHED.
+		 */
+		acl = (error == -ENOATTR) ? NULL : ERR_PTR(error);
+	} else
+		acl = richacl_from_xattr(&init_user_ns, value, size);
+
+	if (!IS_ERR(acl))
+		set_cached_richacl(inode, acl);
+	kfree(value);
+
+	return acl;
+}
+
+int
+xfs_set_richacl(struct inode *inode, struct richacl *acl)
+{
+	struct xfs_inode *ip = XFS_I(inode);
+	umode_t mode = inode->i_mode;
+	int error;
+
+	if (acl) {
+		/* Don't allow acls with unmapped identifiers. */
+		if (richacl_has_unmapped_identifiers(acl))
+			return -EINVAL;
+
+		if (richacl_equiv_mode(acl, &mode) == 0) {
+			xfs_set_mode(inode, mode);
+			acl = NULL;
+		}
+	}
+	if (acl) {
+		void *value;
+		int size = richacl_xattr_size(acl);
+
+		value = kmem_zalloc_large(size, KM_SLEEP);
+		if (!value)
+			return -ENOMEM;
+		richacl_to_xattr(&init_user_ns, acl, value, size);
+		error = xfs_attr_set(ip, XATTR_NAME_RICHACL, value, size,
+				     ATTR_ROOT);
+		kfree(value);
+
+		if (!error) {
+			mode &= ~S_IRWXUGO;
+			mode |= richacl_masks_to_mode(acl);
+			xfs_set_mode(inode, mode);
+		}
+	} else {
+		error = xfs_attr_remove(ip, XATTR_NAME_RICHACL, ATTR_ROOT);
+		if (error == -ENOATTR)
+			error = 0;
+	}
+	if (!error)
+		set_cached_richacl(inode, acl);
+
+	return 0;
+}
