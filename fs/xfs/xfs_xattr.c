@@ -28,6 +28,7 @@
 #include "xfs_acl.h"
 
 #include <linux/posix_acl_xattr.h>
+#include <linux/richacl_xattr.h>
 #include <linux/xattr.h>
 
 
@@ -65,11 +66,17 @@ xfs_forget_acl(
 	 */
 	if (xflags & ATTR_ROOT) {
 #ifdef CONFIG_XFS_POSIX_ACL
-		if (!strcmp(name, SGI_ACL_FILE))
-			forget_cached_acl(inode, ACL_TYPE_ACCESS);
-		else if (!strcmp(name, SGI_ACL_DEFAULT))
-			forget_cached_acl(inode, ACL_TYPE_DEFAULT);
+		if (IS_POSIXACL(inode)) {
+			if (!strcmp(name, SGI_ACL_FILE))
+				forget_cached_acl(inode, ACL_TYPE_ACCESS);
+			else if (!strcmp(name, SGI_ACL_DEFAULT))
+				forget_cached_acl(inode, ACL_TYPE_DEFAULT);
+		}
 #endif
+		if (IS_RICHACL(inode)) {
+			if (!strcmp(name, XATTR_RICHACL))
+				forget_cached_richacl(inode);
+		}
 	}
 }
 
@@ -127,6 +134,7 @@ const struct xattr_handler *xfs_xattr_handlers[] = {
 	&posix_acl_access_xattr_handler,
 	&posix_acl_default_xattr_handler,
 #endif
+	&richacl_xattr_handler,
 	NULL
 };
 
@@ -176,25 +184,34 @@ xfs_xattr_put_listent(
 	ASSERT(context->count >= 0);
 
 	if (flags & XFS_ATTR_ROOT) {
-#ifdef CONFIG_XFS_POSIX_ACL
 		if (namelen == SGI_ACL_FILE_SIZE &&
 		    strncmp(name, SGI_ACL_FILE,
-			    SGI_ACL_FILE_SIZE) == 0) {
+			    SGI_ACL_FILE_SIZE) == 0 &&
+		    IS_POSIXACL(&context->dp->i_vnode)) {
 			__xfs_xattr_put_listent(
 					context, XATTR_SYSTEM_PREFIX,
 					XATTR_SYSTEM_PREFIX_LEN,
 					XATTR_POSIX_ACL_ACCESS,
 					strlen(XATTR_POSIX_ACL_ACCESS));
 		} else if (namelen == SGI_ACL_DEFAULT_SIZE &&
-			 strncmp(name, SGI_ACL_DEFAULT,
-				 SGI_ACL_DEFAULT_SIZE) == 0) {
+			   strncmp(name, SGI_ACL_DEFAULT,
+				   SGI_ACL_DEFAULT_SIZE) == 0 &&
+			   IS_POSIXACL(&context->dp->i_vnode)) {
 			__xfs_xattr_put_listent(
 					context, XATTR_SYSTEM_PREFIX,
 					XATTR_SYSTEM_PREFIX_LEN,
 					XATTR_POSIX_ACL_DEFAULT,
 					strlen(XATTR_POSIX_ACL_DEFAULT));
+		} else if (namelen == strlen(XATTR_RICHACL) &&
+			   strncmp(name, XATTR_RICHACL,
+				   strlen(XATTR_RICHACL)) == 0 &&
+			   IS_RICHACL(&context->dp->i_vnode)) {
+			__xfs_xattr_put_listent(
+					context, XATTR_SYSTEM_PREFIX,
+					XATTR_SYSTEM_PREFIX_LEN,
+					XATTR_RICHACL,
+					strlen(XATTR_RICHACL));
 		}
-#endif
 
 		/*
 		 * Only show root namespace entries if we are actually allowed to
