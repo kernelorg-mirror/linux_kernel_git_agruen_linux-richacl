@@ -122,7 +122,7 @@ struct posix_acl *
 xfs_get_acl(struct inode *inode, int type)
 {
 	struct xfs_inode *ip = XFS_I(inode);
-	struct posix_acl *acl = NULL;
+	struct posix_acl *acl;
 	struct xfs_acl *xfs_acl;
 	unsigned char *ea_name;
 	int error;
@@ -158,18 +158,13 @@ xfs_get_acl(struct inode *inode, int type)
 		 * cache entry, for any other error assume it is transient and
 		 * leave the cache entry as ACL_NOT_CACHED.
 		 */
-		if (error == -ENOATTR)
-			goto out_update_cache;
-		goto out;
-	}
+		acl = (error == -ENOATTR) ? NULL : ERR_PTR(error);
+	} else
+		acl = xfs_acl_from_disk(xfs_acl,
+					XFS_ACL_MAX_ENTRIES(ip->i_mount));
 
-	acl = xfs_acl_from_disk(xfs_acl, XFS_ACL_MAX_ENTRIES(ip->i_mount));
-	if (IS_ERR(acl))
-		goto out;
-
-out_update_cache:
-	set_cached_acl(inode, type, acl);
-out:
+	if (!IS_ERR(acl))
+		set_cached_acl(inode, type, acl);
 	kmem_free(xfs_acl);
 	return acl;
 }
