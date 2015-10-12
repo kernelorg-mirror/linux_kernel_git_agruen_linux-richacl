@@ -75,6 +75,10 @@ xfs_set_richacl(struct inode *inode, struct richacl *acl)
 	if (!acl)
 		return xfs_remove_richacl(inode);
 
+	/* Don't allow acls with unmapped identifiers. */
+	if (richacl_has_unmapped_identifiers(acl))
+		return -EINVAL;
+
 	if (richacl_equiv_mode(acl, &mode) == 0) {
 		xfs_set_mode(inode, mode);
 		return xfs_remove_richacl(inode);
