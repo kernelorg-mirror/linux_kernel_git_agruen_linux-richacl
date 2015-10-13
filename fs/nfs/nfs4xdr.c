@@ -3894,6 +3894,7 @@ static int decode_attr_owner(struct xdr_stream *xdr, uint32_t *bitmap,
 {
 	ssize_t len;
 	char *p;
+	int ret;
 
 	*uid = make_kuid(&init_user_ns, -2);
 	if (unlikely(bitmap[1] & (FATTR4_WORD1_OWNER - 1U)))
@@ -3911,7 +3912,10 @@ static int decode_attr_owner(struct xdr_stream *xdr, uint32_t *bitmap,
 	} else {
 		len = xdr_stream_decode_opaque_inline(xdr, (void **)&p,
 				XDR_MAX_NETOBJ);
-		if (len <= 0 || nfs_map_name_to_uid(server, p, len, uid) != 0)
+		if (len <= 0)
+			goto out;
+		ret = nfs_map_name_to_uid(server, p, len, uid);
+		if (ret != 0 && ret != -ENOENT)
 			goto out;
 		dprintk("%s: uid=%d\n", __func__, (int)from_kuid(&init_user_ns, *uid));
 		return NFS_ATTR_FATTR_OWNER;
@@ -3929,6 +3933,7 @@ static int decode_attr_group(struct xdr_stream *xdr, uint32_t *bitmap,
 {
 	ssize_t len;
 	char *p;
+	int ret;
 
 	*gid = make_kgid(&init_user_ns, -2);
 	if (unlikely(bitmap[1] & (FATTR4_WORD1_OWNER_GROUP - 1U)))
@@ -3946,7 +3951,10 @@ static int decode_attr_group(struct xdr_stream *xdr, uint32_t *bitmap,
 	} else {
 		len = xdr_stream_decode_opaque_inline(xdr, (void **)&p,
 				XDR_MAX_NETOBJ);
-		if (len <= 0 || nfs_map_group_to_gid(server, p, len, gid) != 0)
+		if (len <= 0)
+			goto out;
+		ret = nfs_map_group_to_gid(server, p, len, gid);
+		if (ret != 0 && ret != -ENOENT)
 			goto out;
 		dprintk("%s: gid=%d\n", __func__, (int)from_kgid(&init_user_ns, *gid));
 		return NFS_ATTR_FATTR_GROUP;
