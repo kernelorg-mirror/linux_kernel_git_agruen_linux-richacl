@@ -3876,7 +3876,8 @@ static int decode_attr_owner(struct xdr_stream *xdr, uint32_t *bitmap,
 				ret = NFS_ATTR_FATTR_OWNER_NAME;
 			}
 		} else if (len < XDR_MAX_NETOBJ) {
-			if (nfs_map_name_to_uid(server, (char *)p, len, uid) == 0)
+			ret = nfs_map_name_to_uid(server, (char *)p, len, uid);
+			if (ret == 0 || ret == -ENOENT)
 				ret = NFS_ATTR_FATTR_OWNER;
 			else
 				dprintk("%s: nfs_map_name_to_uid failed!\n",
@@ -3919,7 +3920,8 @@ static int decode_attr_group(struct xdr_stream *xdr, uint32_t *bitmap,
 				ret = NFS_ATTR_FATTR_GROUP_NAME;
 			}
 		} else if (len < XDR_MAX_NETOBJ) {
-			if (nfs_map_group_to_gid(server, (char *)p, len, gid) == 0)
+			ret = nfs_map_group_to_gid(server, (char *)p, len, gid);
+			if (ret == 0 || ret == -ENOENT)
 				ret = NFS_ATTR_FATTR_GROUP;
 			else
 				dprintk("%s: nfs_map_group_to_gid failed!\n",
