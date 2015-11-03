@@ -67,8 +67,8 @@ xfs_remove_richacl(struct inode *inode)
 	return error;
 }
 
-int
-xfs_set_richacl(struct inode *inode, struct richacl *acl)
+static int
+__xfs_set_richacl(struct inode *inode, struct richacl *acl, int xflags)
 {
 	struct xfs_inode *ip = XFS_I(inode);
 	umode_t mode = inode->i_mode;
@@ -88,8 +88,7 @@ xfs_set_richacl(struct inode *inode, struct richacl *acl)
 	if (!value)
 		return -ENOMEM;
 	richacl_to_xattr(&init_user_ns, acl, value, size);
-	error = xfs_attr_set(ip, XATTR_RICHACL, value, size,
-			     ATTR_ROOT);
+	error = xfs_attr_set(ip, XATTR_RICHACL, value, size, xflags);
 	kfree(value);
 	if (error)
 		return error;
@@ -100,4 +99,49 @@ xfs_set_richacl(struct inode *inode, struct richacl *acl)
 	set_cached_richacl(inode, acl);
 
 	return 0;
+}
+
+int
+xfs_set_richacl(struct inode *inode, struct richacl *acl)
+{
+	return __xfs_set_richacl(inode, acl, ATTR_ROOT);
+}
+
+int
+xfs_richacl_get_ioctl(struct inode *inode, void *value, int *len)
+{
+	struct user_namespace *user_ns = current_user_ns();
+	struct richacl *acl;
+	int error;
+
+	acl = get_richacl(inode);
+	if (IS_ERR_OR_NULL(acl))
+		return PTR_ERR(acl);
+	error = richacl_to_xattr(user_ns, acl, value, *len);
+	if (error > 0) {
+		*len = error;
+		error = 0;
+	}
+	richacl_put(acl);
+	return error;
+}
+
+int
+xfs_richacl_set_ioctl(struct inode *inode, void *value, unsigned int size,
+		      int xflags)
+{
+	struct user_namespace *user_ns = current_user_ns();
+	struct richacl *acl = NULL;
+	int error;
+
+	if (!IS_RICHACL(inode))
+		return -EOPNOTSUPP;
+	if (value) {
+		acl = richacl_from_xattr(user_ns, value, size, -EINVAL);
+		if (IS_ERR(acl))
+			return PTR_ERR(acl);
+	}
+	error = __xfs_set_richacl(inode, acl, xflags);
+	richacl_put(acl);
+	return error;
 }
