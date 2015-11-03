@@ -40,6 +40,7 @@
 #include "xfs_symlink.h"
 #include "xfs_trans.h"
 #include "xfs_pnfs.h"
+#include "xfs_richacl.h"
 
 #include <linux/capability.h>
 #include <linux/dcache.h>
@@ -48,6 +49,7 @@
 #include <linux/pagemap.h>
 #include <linux/slab.h>
 #include <linux/exportfs.h>
+#include <linux/xattr.h>
 
 /*
  * xfs_find_handle maps from userspace xfs_fsop_handlereq structure to
@@ -461,10 +463,20 @@ xfs_attrmulti_attr_get(
 	if (!kbuf)
 		return -ENOMEM;
 
+	if (flags & ATTR_ROOT) {
+		if (!strcmp(name, XATTR_RICHACL)) {
+			error = xfs_richacl_get_ioctl(inode, kbuf, (int *)len);
+			if (error)
+				goto out_kfree;
+			goto out_copy;
+		}
+	}
+
 	error = xfs_attr_get(XFS_I(inode), name, kbuf, (int *)len, flags);
 	if (error)
 		goto out_kfree;
 
+out_copy:
 	if (copy_to_user(ubuf, kbuf, *len))
 		error = -EFAULT;
 
@@ -493,7 +505,16 @@ xfs_attrmulti_attr_set(
 	if (IS_ERR(kbuf))
 		return PTR_ERR(kbuf);
 
+	if (flags & ATTR_ROOT) {
+		if (!strcmp(name, XATTR_RICHACL)) {
+			error = xfs_richacl_set_ioctl(inode, kbuf, len, flags);
+			goto out_kfree;
+		}
+	}
+
 	error = xfs_attr_set(XFS_I(inode), name, kbuf, len, flags);
+
+out_kfree:
 	kfree(kbuf);
 	return error;
 }
@@ -506,6 +527,12 @@ xfs_attrmulti_attr_remove(
 {
 	if (IS_IMMUTABLE(inode) || IS_APPEND(inode))
 		return -EPERM;
+
+	if (flags & ATTR_ROOT) {
+		if (!strcmp(name, XATTR_RICHACL))
+			return xfs_richacl_set_ioctl(inode, NULL, 0, flags);
+	}
+
 	return xfs_attr_remove(XFS_I(inode), name, flags);
 }
 
