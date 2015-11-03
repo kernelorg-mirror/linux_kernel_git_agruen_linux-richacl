@@ -20,4 +20,7 @@ struct richacl;
 extern struct richacl *xfs_get_richacl(struct inode *);
 extern int xfs_set_richacl(struct inode *, struct richacl *);
 
+extern int xfs_richacl_get_ioctl(struct inode *, void *, int *);
+extern int xfs_richacl_set_ioctl(struct inode *, void *, int, int);
+
 #endif  /* __FS_XFS_RICHACL_H */
