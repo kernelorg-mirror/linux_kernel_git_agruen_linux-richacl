@@ -1031,7 +1031,7 @@ void ll_clear_inode(struct inode *inode)
 
 #ifdef CONFIG_FS_POSIX_ACL
 	if (lli->lli_posix_acl) {
-		LASSERT(atomic_read(&lli->lli_posix_acl->a_refcount) == 1);
+		LASSERT(base_acl_refcount(&lli->lli_posix_acl->a_base) == 1);
 		posix_acl_release(lli->lli_posix_acl);
 		lli->lli_posix_acl = NULL;
 	}
