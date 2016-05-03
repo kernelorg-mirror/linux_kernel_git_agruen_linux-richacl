@@ -530,18 +530,22 @@ static inline void mapping_allow_writable(struct address_space *mapping)
 #define i_size_ordered_init(inode) do { } while (0)
 #endif
 
+struct base_acl {
+	atomic_t ba_refcount;
+	struct rcu_head ba_rcu;
+};
 struct posix_acl;
 #define ACL_NOT_CACHED ((void *)(-1))
 #define ACL_DONT_CACHE ((void *)(-3))
 
-static inline struct posix_acl *
+static inline struct base_acl *
 uncached_acl_sentinel(struct task_struct *task)
 {
 	return (void *)task + 1;
 }
 
 static inline bool
-is_uncached_acl(struct posix_acl *acl)
+is_uncached_acl(struct base_acl *acl)
 {
 	return (long)acl & 1;
 }
@@ -564,9 +568,9 @@ struct inode {
 	kgid_t			i_gid;
 	unsigned int		i_flags;
 
-#ifdef CONFIG_FS_POSIX_ACL
-	struct posix_acl	*i_acl;
-	struct posix_acl	*i_default_acl;
+#if defined(CONFIG_FS_POSIX_ACL)
+	struct base_acl		*i_acl;
+	struct base_acl		*i_default_acl;
 #endif
 
 	const struct inode_operations	*i_op;
@@ -3183,5 +3187,25 @@ static inline bool dir_relax_shared(struct inode *inode)
 
 extern bool path_noexec(const struct path *path);
 extern void inode_nohighmem(struct inode *inode);
+
+static inline void base_acl_get(struct base_acl *acl)
+{
+	if (acl)
+		atomic_inc(&acl->ba_refcount);
+}
+
+static inline void base_acl_put(struct base_acl *acl)
+{
+	if (acl && atomic_dec_and_test(&acl->ba_refcount))
+		kfree_rcu(acl, ba_rcu);
+}
+
+static inline void base_acl_init(struct base_acl *acl)
+{
+	atomic_set(&acl->ba_refcount, 1);
+}
+
+extern struct base_acl *__get_cached_acl(struct base_acl **);
+extern void __forget_cached_acl(struct base_acl **);
 
 #endif /* _LINUX_FS_H */
