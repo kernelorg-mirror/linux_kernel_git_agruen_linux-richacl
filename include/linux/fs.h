@@ -584,6 +584,7 @@ struct base_acl {
 	struct rcu_head ba_rcu;
 };
 struct posix_acl;
+struct richacl;
 #define ACL_NOT_CACHED ((void *)(-1))
 
 static inline struct base_acl *
@@ -614,9 +615,11 @@ struct inode {
 	kgid_t			i_gid;
 	unsigned int		i_flags;
 
-#if defined(CONFIG_FS_POSIX_ACL)
+#if defined(CONFIG_FS_POSIX_ACL) || defined(CONFIG_FS_RICHACL)
 	struct base_acl		*i_acl;
+# if defined(CONFIG_FS_POSIX_ACL)
 	struct base_acl		*i_default_acl;
+# endif
 #endif
 
 	const struct inode_operations	*i_op;
