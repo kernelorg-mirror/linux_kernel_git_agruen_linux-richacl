@@ -70,6 +70,17 @@ richacl_put(struct richacl *acl)
 	base_acl_put(&acl->a_base);
 }
 
+static inline struct richacl *
+richacl(struct base_acl *base_acl)
+{
+	BUILD_BUG_ON(offsetof(struct richacl, a_base) != 0);
+	return container_of(base_acl, struct richacl, a_base);
+}
+
+extern void set_cached_richacl(struct inode *, struct richacl *);
+extern void forget_cached_richacl(struct inode *);
+extern struct richacl *get_richacl(struct inode *);
+
 /**
  * richace_is_owner  -  check if @ace is an OWNER@ entry
  */
