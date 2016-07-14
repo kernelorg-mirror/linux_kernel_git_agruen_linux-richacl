@@ -207,4 +207,12 @@ extern struct richacl *richacl_inherit(const struct richacl *, int);
 extern struct richacl *richacl_create(umode_t *, struct inode *);
 extern int set_richacl(struct inode *, struct richacl *);
 
+#ifdef CONFIG_FS_RICHACL
+extern int check_richacl(struct inode *, int);
+#else
+static inline int check_richacl(struct inode *inode, int mask) {
+	return -EAGAIN;
+}
+#endif  /* CONFIG_FS_RICHACL */
+
 #endif /* __RICHACL_H */
