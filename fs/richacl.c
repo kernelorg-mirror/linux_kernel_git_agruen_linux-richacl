@@ -385,6 +385,34 @@ out:
 }
 EXPORT_SYMBOL_GPL(richacl_permission);
 
+int check_richacl(struct inode *inode, int mask)
+{
+	if (mask & MAY_NOT_BLOCK) {
+		struct base_acl *base_acl;
+
+		base_acl = rcu_dereference(inode->i_acl);
+		if (!base_acl)
+			return -EAGAIN;
+		/* no ->get_richacl() calls in RCU mode... */
+		if (is_uncached_acl(base_acl))
+			return -ECHILD;
+		return richacl_permission(inode, richacl(base_acl),
+					  mask & ~MAY_NOT_BLOCK);
+	} else {
+		struct richacl *acl;
+
+		acl = get_richacl(inode);
+		if (IS_ERR(acl))
+			return PTR_ERR(acl);
+		if (acl) {
+			int error = richacl_permission(inode, acl, mask);
+			richacl_put(acl);
+			return error;
+		}
+	}
+	return -EAGAIN;
+}
+
 /*
  * Note: functions like richacl_allowed_to_who(), richacl_group_class_allowed(),
  * and richacl_compute_max_masks() iterate through the entire acl in reverse
