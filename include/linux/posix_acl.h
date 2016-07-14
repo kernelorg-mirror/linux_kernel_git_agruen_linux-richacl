@@ -74,6 +74,7 @@ extern struct posix_acl *get_posix_acl(struct inode *, int);
 extern int set_posix_acl(struct inode *, int, struct posix_acl *);
 
 #ifdef CONFIG_FS_POSIX_ACL
+extern int check_posix_acl(struct inode *, int);
 extern int posix_acl_chmod(struct inode *, umode_t);
 extern int posix_acl_create(struct inode *, umode_t *, struct posix_acl **,
 		struct posix_acl **);
@@ -93,6 +94,10 @@ static inline void cache_no_acl(struct inode *inode)
 	inode->i_default_acl = NULL;
 }
 #else
+static inline int check_posix_acl(struct inode *inode, int mask) {
+	return -EAGAIN;
+}
+
 static inline int posix_acl_chmod(struct inode *inode, umode_t mode)
 {
 	return 0;
