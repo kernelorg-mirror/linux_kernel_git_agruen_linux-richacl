@@ -258,73 +258,6 @@ void putname(struct filename *name)
 		__putname(name);
 }
 
-static int check_richacl(struct inode *inode, int mask)
-{
-#ifdef CONFIG_FS_RICHACL
-	if (mask & MAY_NOT_BLOCK) {
-		struct base_acl *base_acl;
-
-		base_acl = rcu_dereference(inode->i_acl);
-		if (!base_acl)
-			goto no_acl;
-		/* no ->get_richacl() calls in RCU mode... */
-		if (is_uncached_acl(base_acl))
-			return -ECHILD;
-		return richacl_permission(inode, richacl(base_acl),
-					  mask & ~MAY_NOT_BLOCK);
-	} else {
-		struct richacl *acl;
-
-		acl = get_richacl(inode);
-		if (IS_ERR(acl))
-			return PTR_ERR(acl);
-		if (acl) {
-			int error = richacl_permission(inode, acl, mask);
-			richacl_put(acl);
-			return error;
-		}
-	}
-no_acl:
-#endif
-	if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
-		    MAY_CHMOD | MAY_SET_TIMES)) {
-		/* File permission bits cannot grant this. */
-		return -EACCES;
-	}
-	return -EAGAIN;
-}
-
-static int check_posix_acl(struct inode *inode, int mask)
-{
-#ifdef CONFIG_FS_POSIX_ACL
-	if (mask & MAY_NOT_BLOCK) {
-		struct base_acl *base_acl;
-
-		base_acl = rcu_dereference(inode->i_acl);
-	        if (!base_acl)
-	                return -EAGAIN;
-		/* no ->get_acl() calls in RCU mode... */
-		if (is_uncached_acl(base_acl))
-			return -ECHILD;
-	        return posix_acl_permission(inode, posix_acl(base_acl),
-					    mask & ~MAY_NOT_BLOCK);
-	} else {
-		struct posix_acl *acl;
-
-		acl = get_acl(inode, ACL_TYPE_ACCESS);
-		if (IS_ERR(acl))
-			return PTR_ERR(acl);
-		if (acl) {
-			int error = posix_acl_permission(inode, acl, mask);
-			posix_acl_release(acl);
-			return error;
-		}
-	}
-#endif
-
-	return -EAGAIN;
-}
-
 /*
  * This does the basic permission checking
  */
@@ -360,6 +293,11 @@ static int acl_permission_check(struct inode *inode, int mask)
 		error = check_richacl(inode, mask);
 		if (error != -EAGAIN)
 			return error;
+		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
+			    MAY_CHMOD | MAY_SET_TIMES)) {
+			/* File permission bits cannot grant this. */
+			return -EACCES;
+		}
 	}
 	if (likely(uid_eq(current_fsuid(), inode->i_uid)))
 		mode >>= 6;
