@@ -374,6 +374,34 @@ check_perm:
 	return -EACCES;
 }
 
+int check_posix_acl(struct inode *inode, int mask)
+{
+	if (mask & MAY_NOT_BLOCK) {
+		struct base_acl *base_acl;
+
+		base_acl = rcu_dereference(inode->i_acl);
+	        if (!base_acl)
+	                return -EAGAIN;
+		/* no ->get_acl() calls in RCU mode... */
+		if (is_uncached_acl(base_acl))
+			return -ECHILD;
+	        return posix_acl_permission(inode, posix_acl(base_acl),
+					    mask & ~MAY_NOT_BLOCK);
+	} else {
+		struct posix_acl *acl;
+
+		acl = get_acl(inode, ACL_TYPE_ACCESS);
+		if (IS_ERR(acl))
+			return PTR_ERR(acl);
+		if (acl) {
+			int error = posix_acl_permission(inode, acl, mask);
+			posix_acl_release(acl);
+			return error;
+		}
+	}
+	return -EAGAIN;
+}
+
 /*
  * Modify acl when creating a new inode. The caller must ensure the acl is
  * only referenced once.
